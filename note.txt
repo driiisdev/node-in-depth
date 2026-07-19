@@ -1,0 +1,52 @@
+# nodejs
+
+**course overview**
+- terms n concepts to understand what nodejs 
+- modules (user defined)
+- built-in modules
+- nodejs internals
+- npm - node package manager
+- cli tool
+- misc
+
+---
+## terms n concepts to understand what nodejs
+
+**ecmascript summary**
+- ecma-262 is the language specification
+- ecmascript is the language that implements ecma-262
+- javascript is basically ecmascript at its core but builds on top of that
+
+**chrome's v8 engine summary**
+- a javascript engine is a program that executes javascript code
+- in 2008, google created its own javascript engine called v8
+- v8 is written in c++ and can be used independently or can be embedded into other c++ programs
+- that allows you to write your own c++ programs which can do everything that v8 can do and more
+- your c++ program can run ecmascript and additional features that you choose to incorporate 
+- for example, features that are available in c++ but not available with javascript
+
+**chrome browser javascript engine**
+
+**nodejs summary**
+- nodejs is an open source, cross platform javascript runtime environment
+- it is not a language, it is not a framework
+- capable of executing javascript code outside a browser
+- it can execute not only the standard ecmascript language but also new features that are made available through c++ bindings using the v8 engine
+- it consists of c++ files which form the core features and javascript files which expose common utilities and some of the c++ features for easier consumption
+
+**executing javascript with node**
+- 1. node repl
+    read
+    evaluate
+    print
+    loop
+
+- 2. executing code in a javascript file in the command line
+
+**browser vs nodejs**
+- in the browser, most of the time what ypu are doing is interacting with the dom, or other web platform apis like cookies. you dont have the document, window and all the other objects that are provided by the browser
+- in the browser, we dont have all the nice apis that nodejs provides through its modules. for example the file-system access functionality
+-with nodejs, you control the environment
+- with a browser, you are at the mercy of what the users choose
+
+
