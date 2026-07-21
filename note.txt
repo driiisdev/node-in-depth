@@ -80,7 +80,14 @@
 - iife helps keep top-level variables scoped to the module rather than the global objects
 - the iife that wraps every module contains 5 parameters which are pretty important for the functioning of a module
 
-
-
+**es modules summary**
+es modules is the ecmascript standard for modules
+it was introduced with es2015
+nodejs 14 and above support es modules
+instead of module.exports, we use the export keyword
+the export can be default or named
+we import the exported variables or functions using the import keyword
+if it is a default export, we can assign any name while importing
+if it is a named export, the import name must be the same
 
 
