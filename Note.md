@@ -59,3 +59,47 @@
 - In the browser, we don't have all the nice APIs that Node.js provides through its modules. For example the file-system access functionality
 - With Node.js, you control the environment
 - With a browser, you are at the mercy of what the users choose
+
+---
+
+## Modules
+
+- A module is an encapsulated and reusable chunk of code that has its own context
+- In Node.js, each file is treated as a separate module
+
+### Types of Modules
+
+- **Local modules** - modules that we create in our application
+- **Built-in modules** - modules that Node.js ships with out of the box
+- **Third party modules** - modules written by other developers that we can use in our application
+
+### CommonJS
+
+- CommonJS is a standard that states how a module should be structured and shared
+- Node.js adopted CommonJS when it started out and is what you will see in code bases
+
+### Local Modules Summary
+
+- In Node.js, each file is a module that is isolated by default
+- To load a module into another file, we use the `require` functionality
+- When `index.js` is executed, the code in the module is also executed
+- If the file we are requiring is a JavaScript file, we can skip specifying the extension and Node.js will infer it on our behalf
+
+### Module Scope Summary
+
+- Each loaded module in Node.js is wrapped with an IIFE that provides private scoping of code
+- IIFE allows you to repeat variable or function names without any conflicts
+
+![IIFE in Node.js](assets/img/iife.png)
+
+### Module Wrapper
+
+- Every module in Node.js gets wrapped in an IIFE before being loaded
+- IIFE helps keep top-level variables scoped to the module rather than the global object
+- The IIFE that wraps every module contains 5 parameters which are pretty important for the functioning of a module
+
+![Module Wrapper - before wrapping](assets/img/module%20wrapper%281%29.png)
+
+![Module Wrapper - wrapped in an IIFE](assets/img/module%20wrapper%282%29.png)
+
+![Module Wrapper - with its 5 parameters](assets/img/module%20wrapper%283%29.png)

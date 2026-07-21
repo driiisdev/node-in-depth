@@ -49,4 +49,38 @@
 -with nodejs, you control the environment
 - with a browser, you are at the mercy of what the users choose
 
+---
+
+## modules
+
+- a module is an encapsulated and reusable chunk of code that has its own context
+- in nodejs, each file is treated as a seperate module
+
+**types of modules**
+- local modules - modules that we create in our application
+- built-in modules - modules that nodejs ships with out of the box
+- third party modules - modules written by other developers that we can use in our application
+
+**commonjs**
+- commonjs is a standard that states how a module should be structured and shared
+- nodejs is adopted commonjs when it started out and is what you will see in code bases
+
+### local modules summary
+- in nodejs, each file is a module that is isolated by default
+- to load a module into another file, we use the require functionality
+- when index.js is executed, the code in the module is also executed
+- if the file we are requiring is a javascript file, we can skip specifying the extension and nodejs will infer it on our behalf
+
+**module scope summary**
+- each loaded module in nodejs is wrapped with an iife that provides private scoping of code
+- iife allows you to repeat variable or function names without any conflicts
+
+**module wrapper**
+- every module in nodejs gets wrapped in an iife before being loaded
+- iife helps keep top-level variables scoped to the module rather than the global objects
+- the iife that wraps every module contains 5 parameters which are pretty important for the functioning of a module
+
+
+
+
 
