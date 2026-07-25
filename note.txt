@@ -90,4 +90,55 @@ we import the exported variables or functions using the import keyword
 if it is a default export, we can assign any name while importing
 if it is a named export, the import name must be the same
 
+### built in modules
+- modules that nodejs ships with
+- also referred to as core modules
+- import the module before you can use it
+
+**focus**
+. path
+. events
+. fs
+. stream
+. http
+
+**path module**
+- the path module provides utilities for working with file and directory paths
+    . __filename
+    . __dirname
+    . basename()
+    . extname()
+    . parse()
+    . absolute()
+    . format()
+    . isAbsolute()
+    . join()
+    . resolve()
+
+**NB: node:protocol**
+- makes it perfectly clear that the import is a nodejs builtin module
+- makes the import identifier a valid absolute URL
+- avoids conflicts for future nodejs built in modules
+
+**callback pattern**
+- in javascript, function are first class object 
+- object is a standalone entity that stores data as key-value pairs
+- class is a blueprint used to create those objects systematically
+- function that are pass into another function as parameters, also get called inside the function are called callback function
+- function that takes in another function as param/args or returns function are called high order function
+
+**types of callbacks**
+- synchronous callbacks
+- asynchronous callbacks
+
+**synchronous callbacks**
+- a callback which is executed immediately is called a synchronous callback
+
+**asynchronous callbacks**
+- a callback that is often used to continue or resume code execution after an asychronous operation has completed
+- callbacks are used to delay the execution of a function until a particular time or event has occured
+- in nodejs have an asychronousnature to prevent blocking of execution
+- e.g reading data from a file, fetching data form a database or handling a network request
+
+
 

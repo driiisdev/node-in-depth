@@ -114,3 +114,64 @@
 - We import the exported variables or functions using the `import` keyword
 - If it is a default export, we can assign any name while importing
 - If it is a named export, the import name must be the same
+
+### Built-in Modules
+
+- Modules that Node.js ships with
+- Also referred to as core modules
+- Import the module before you can use it
+
+#### Focus
+
+- `path`
+- `events`
+- `fs`
+- `stream`
+- `http`
+
+#### Path Module
+
+- The `path` module provides utilities for working with file and directory paths
+  - `__filename`
+  - `__dirname`
+  - `basename()`
+  - `extname()`
+  - `parse()`
+  - `format()`
+  - `isAbsolute()`
+  - `join()`
+  - `resolve()`
+
+> **`node:` protocol**
+>
+> - Makes it perfectly clear that the import is a Node.js builtin module
+> - Makes the import identifier a valid absolute URL
+> - Avoids conflicts for future Node.js built-in modules
+
+#### Callback Pattern
+
+- In JavaScript, functions are first class objects
+- An object is a standalone entity that stores data as key-value pairs
+- A class is a blueprint used to create those objects systematically
+- Functions that are passed into another function as parameters, and are also called from inside that function, are called callback functions
+- Functions that take another function as a parameter/argument, or return a function, are called higher order functions
+
+#### Types of Callbacks
+
+- Synchronous callbacks
+- Asynchronous callbacks
+
+##### Synchronous Callbacks
+
+- A callback which is executed immediately is called a synchronous callback
+
+![Synchronous Callbacks](assets/img/synchronous%20callbacks.png)
+
+##### Asynchronous Callbacks
+
+- A callback that is often used to continue or resume code execution after an asynchronous operation has completed
+- Callbacks are used to delay the execution of a function until a particular time or event has occurred
+- Node.js has an asynchronous nature to prevent blocking of execution
+- E.g. reading data from a file, fetching data from a database, or handling a network request
+
+![Asynchronous Callbacks in Browser](assets/img/asynchronous%20callbacks%20in%20browser.png)
