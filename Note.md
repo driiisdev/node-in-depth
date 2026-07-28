@@ -181,3 +181,11 @@
 - The `events` module allows us to work with events in Node.js
 - An event is an action or an occurrence that has happened in our application that we can respond to
 - Using the `events` module, we can dispatch our own custom events and respond to those custom events in a non-blocking manner
+
+#### Character Sets and Encoding
+
+![Character Encoding](assets/img/character%20encoding.png)
+
+![Character & Binary Format](assets/img/character%20%20binary%20format.png)
+
+![Binary Data](assets/img/binary%20data.png)
