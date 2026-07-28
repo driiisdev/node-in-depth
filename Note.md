@@ -175,3 +175,9 @@
 - E.g. reading data from a file, fetching data from a database, or handling a network request
 
 ![Asynchronous Callbacks in Browser](assets/img/asynchronous%20callbacks%20in%20browser.png)
+
+#### Events Module
+
+- The `events` module allows us to work with events in Node.js
+- An event is an action or an occurrence that has happened in our application that we can respond to
+- Using the `events` module, we can dispatch our own custom events and respond to those custom events in a non-blocking manner

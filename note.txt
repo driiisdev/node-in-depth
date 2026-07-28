@@ -140,5 +140,7 @@ if it is a named export, the import name must be the same
 - in nodejs have an asychronousnature to prevent blocking of execution
 - e.g reading data from a file, fetching data form a database or handling a network request
 
-
-
+**events module**
+- the events module allows us  to work with events in nodejs
+- an event is an action or an occurence that has happened in our application that we can respond to
+- using the events module, we can dispatch our own custom events and respond to those custom events in a non-blocking manner
