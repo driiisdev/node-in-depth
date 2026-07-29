@@ -189,3 +189,21 @@
 ![Character & Binary Format](assets/img/character%20%20binary%20format.png)
 
 ![Binary Data](assets/img/binary%20data.png)
+
+#### Streams and Buffers
+
+- A stream is a sequence of data that is being moved from one point to another over time
+- E.g. a stream of data over the internet being moved from one computer to another
+- E.g. a stream of data being transferred from one file to another within the same computer
+- Process streams of data in chunks as they arrive instead of waiting for the entire data to be available before processing
+- E.g. watching a video on YouTube
+  - The data arrives in chunks and you watch in chunks while the rest of the data arrives over time
+- E.g. transferring file contents from fileA to fileB
+  - The contents arrive in chunks and you transfer in chunks while the remaining contents arrive over time
+- Prevents unnecessary data download and memory usage
+
+![Buffers Overview](assets/img/buffer%200.png)
+
+![Buffers in a Stream](assets/img/buffer%201.png)
+
+![Buffers as Chunks of Data](assets/img/buffer%202.png)
