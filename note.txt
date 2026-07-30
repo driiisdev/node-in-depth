@@ -157,3 +157,15 @@ if it is a named export, the import name must be the same
 - e.g: transferring file contents from fileA to fileB
 - the contents arrive in chunks and you transfer in chunks while the remaining contents arrive over time
 - prevents unnecessary data download and memory usage
+
+**asychronous javascript**
+- javascript is its basic form is a synchronous, blocking, single-threaded language
+- synchronous: if we have two functions which log messages to the console, code execute top down, with only one line executing at any given time
+- blocking: no matter how long a previous process takes, the subsequent processes wont kick off until the former is completed. web app runs in a browser and it executes an intensive chunk of code without returning control to the browser, the browser can appear to be frozen
+- single threaded:a thread is simply a unit of a process that javascript program use to run task. each thread can only do one task at a time. javascript has just the one thread called main thread for executing any code.
+- just javascript is not enough
+- we need new pieces which are outside of javascript to help us write asychronous code
+- for front end, this is where web browsers come into play. for back end, this is where nodejs comes into play
+- web browsers and nodejs define functions and apis that allow us to register functions that should not be executed synchronously, and should instead be revoked asychronously when some kind of event occurs
+- for example, that could be the passage of time (setTimeout oe setInterval), the user's interaction with the mouse (addEventListener), data being read from a file system or the arrival of data over the network (callbacks, promises, async-await)
+you can let your code do several things at the same time without stopping or blocking your main thread

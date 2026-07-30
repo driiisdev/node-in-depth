@@ -207,3 +207,17 @@
 ![Buffers in a Stream](assets/img/buffer%201.png)
 
 ![Buffers as Chunks of Data](assets/img/buffer%202.png)
+
+#### Asynchronous JavaScript
+
+- **JavaScript in its basic form is a synchronous, blocking, single-threaded language.**
+- **<u>Synchronous</u>**: If we have two functions which log messages to the console, code executes top down, with only one line executing at any given time.
+- **<u>Blocking</u>**: No matter how long a previous process takes, the subsequent processes won't kick off until the former is completed. If a web app runs in a browser and it executes an intensive chunk of code without returning control to the browser, the browser can appear to be frozen.
+- **<u>Single threaded</u>**: A thread is simply a unit of a process that JavaScript programs use to run tasks. Each thread can only do one task at a time. JavaScript has just the one thread, called the main thread, for executing any code.
+
+**<u>NB:</u>**
+- Just JavaScript is not enough - we need new pieces which are outside of JavaScript to help us write asynchronous code.
+- For front end, this is where web browsers come into play. For back end, this is where Node.js comes into play.
+- Web browsers and Node.js define functions and APIs that allow us to register functions that should not be executed synchronously, and should instead be invoked asynchronously when some kind of event occurs.
+- For example, that could be the passage of time (`setTimeout` or `setInterval`), the user's interaction with the mouse (`addEventListener`), data being read from the file system, or the arrival of data over the network (callbacks, promises, async/await).
+- You can let your code do several things at the same time without stopping or blocking your main thread.
