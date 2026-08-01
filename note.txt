@@ -169,3 +169,9 @@ if it is a named export, the import name must be the same
 - web browsers and nodejs define functions and apis that allow us to register functions that should not be executed synchronously, and should instead be revoked asychronously when some kind of event occurs
 - for example, that could be the passage of time (setTimeout oe setInterval), the user's interaction with the mouse (addEventListener), data being read from a file system or the arrival of data over the network (callbacks, promises, async-await)
 you can let your code do several things at the same time without stopping or blocking your main thread
+
+**fs Module**
+- the file system (fs) module alllows you to work with the file system on your computerfb 
+
+
+

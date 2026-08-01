@@ -210,7 +210,7 @@
 
 #### Asynchronous JavaScript
 
-- **JavaScript in its basic form is a synchronous, blocking, single-threaded language.**
+- **JavaScript in its basic form is a <u>Synchronous</u>, <u>Blocking</u>, <u>Single-Threaded</u> language.**
 - **<u>Synchronous</u>**: If we have two functions which log messages to the console, code executes top down, with only one line executing at any given time.
 - **<u>Blocking</u>**: No matter how long a previous process takes, the subsequent processes won't kick off until the former is completed. If a web app runs in a browser and it executes an intensive chunk of code without returning control to the browser, the browser can appear to be frozen.
 - **<u>Single threaded</u>**: A thread is simply a unit of a process that JavaScript programs use to run tasks. Each thread can only do one task at a time. JavaScript has just the one thread, called the main thread, for executing any code.
@@ -221,3 +221,24 @@
 - Web browsers and Node.js define functions and APIs that allow us to register functions that should not be executed synchronously, and should instead be invoked asynchronously when some kind of event occurs.
 - For example, that could be the passage of time (`setTimeout` or `setInterval`), the user's interaction with the mouse (`addEventListener`), data being read from the file system, or the arrival of data over the network (callbacks, promises, async/await).
 - You can let your code do several things at the same time without stopping or blocking your main thread.
+
+#### fs Module
+
+- The file system (`fs`) module allows you to work with the file system on your computer
+- It supports reading, writing, updating, deleting, and watching files and directories
+- Most methods are available in three flavors:
+  - **Synchronous** - blocks the main thread until the operation completes, e.g. `readFileSync()`
+  - **Callback-based (asynchronous)** - non-blocking, takes a callback that runs once the operation completes, e.g. `readFile()`
+  - **Promise-based** - non-blocking, returned via `fs/promises`, works well with `async`/`await`
+- Prefer the asynchronous or promise-based APIs in production code so file I/O doesn't block the single main thread
+
+##### Common `fs` Methods
+
+- `readFile()` / `writeFile()` / `appendFile()` - read from, write to, or append to a file
+- `readdir()` - read the contents of a directory
+- `mkdir()` / `rmdir()` - create or remove a directory
+- `unlink()` - delete a file
+- `stat()` - get information about a file or directory (size, type, timestamps, etc.)
+- `rename()` - rename or move a file
+- `existsSync()` - synchronously check whether a path exists
+- `createReadStream()` / `createWriteStream()` - read from or write to a file as a stream, useful for large files
