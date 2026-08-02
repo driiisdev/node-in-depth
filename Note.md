@@ -201,12 +201,26 @@
 - E.g. transferring file contents from fileA to fileB
   - The contents arrive in chunks and you transfer in chunks while the remaining contents arrive over time
 - Prevents unnecessary data download and memory usage
+- Stream is in fact a built-in Node.js module that inherits from the `EventEmitter` class
+- Stream is rarely used directly - instead, other modules internally use streams for their functioning
 
 ![Buffers Overview](assets/img/buffer%200.png)
 
 ![Buffers in a Stream](assets/img/buffer%201.png)
 
 ![Buffers as Chunks of Data](assets/img/buffer%202.png)
+
+#### Streams & `pipe()`
+
+- `fs.createReadStream()` and `fs.createWriteStream()` create a readable and a writable stream respectively, without loading the whole file into memory at once
+- A readable stream emits a `'data'` event for every chunk it reads, and an `'end'` event once there is no more data to read
+- `readableStream.pipe(writableStream)` connects the two directly - it forwards every chunk from the readable stream into the writable stream automatically, and calls `.end()` on the writable stream once the readable stream finishes
+  - This replaces manually wiring up `.on('data', chunk => writableStream.write(chunk))` and `.on('end', () => writableStream.end())` yourself
+  - `pipe()` also manages backpressure automatically - it pauses the readable stream if the writable stream's internal buffer is still full, and resumes it once there's room
+- `pipe()` returns the destination stream, so pipes can be chained (`readable.pipe(transform).pipe(writable)`) to build a processing pipeline, e.g. piping through `zlib.createGzip()` to compress data on the way to disk
+- A single readable stream can be piped to more than one destination, e.g. writing the plain file to `file2.txt` while also piping it through gzip into `file2.txt.gz`
+- The `highWaterMark` option controls the internal buffer size (in bytes) for how much data is read into memory per chunk - a smaller value means more, smaller reads
+- Always attach an `'error'` listener to the readable stream - a missing/incorrect file path throws an unhandled `'error'` event instead of failing loudly in an obvious way
 
 #### Asynchronous JavaScript
 

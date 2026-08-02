@@ -1,0 +1,2 @@
+This is a sample file used to demonstrate Node.js streams.
+Data is read from this file in chunks and piped into file2.txt.

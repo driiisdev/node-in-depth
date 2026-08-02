@@ -157,6 +157,8 @@ if it is a named export, the import name must be the same
 - e.g: transferring file contents from fileA to fileB
 - the contents arrive in chunks and you transfer in chunks while the remaining contents arrive over time
 - prevents unnecessary data download and memory usage
+- stream is infact a built-in node module that inherits from the event emitter class
+- stream is rarely used directly, instead other modules internally use streams for their functioning
 
 **asychronous javascript**
 - javascript is its basic form is a synchronous, blocking, single-threaded language
