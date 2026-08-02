@@ -55,7 +55,8 @@
 
 ### Browser vs Node.js
 
-- In the browser, most of the time what you are doing is interacting with the DOM, or other web platform APIs like cookies. You don't have the `document`, `window` and all the other objects that are provided by the browser
+- In the browser, most of the time what you are doing is interacting with the DOM, or other web platform APIs like cookies
+- In Node.js, you don't have the `document`, `window` and all the other objects that are provided by the browser
 - In the browser, we don't have all the nice APIs that Node.js provides through its modules. For example the file-system access functionality
 - With Node.js, you control the environment
 - With a browser, you are at the mercy of what the users choose
@@ -256,3 +257,18 @@
 - `rename()` - rename or move a file
 - `existsSync()` - synchronously check whether a path exists
 - `createReadStream()` / `createWriteStream()` - read from or write to a file as a stream, useful for large files
+
+#### HTTP and Node
+
+![How the Web Works - Client and Server](assets/img/how%20the%20web%20works%201.png)
+
+![How the Web Works - Request and Response](assets/img/how%20the%20web%20works%202.png)
+
+- HTTP stands for HyperText Transfer Protocol
+- It's a protocol that defines a format for clients and servers to speak to each other
+- The client sends an HTTP request and the server responds with an HTTP response
+- We can create a web server using Node.js
+- Node.js has access to operating system functionality like networking
+- Node has an event loop to run tasks asynchronously, which makes it well suited for a web server that needs to handle large volumes of requests simultaneously
+- The server we create with Node still needs to respect the HTTP format
+- The `http` module allows creation of web servers that can transfer data over HTTP

@@ -1,7 +1,7 @@
 # nodejs
 
 **course overview**
-- terms n concepts to understand what nodejs 
+- terms n concepts to understand what nodejs is
 - modules (user defined)
 - built-in modules
 - nodejs internals
@@ -22,12 +22,17 @@
 - in 2008, google created its own javascript engine called v8
 - v8 is written in c++ and can be used independently or can be embedded into other c++ programs
 - that allows you to write your own c++ programs which can do everything that v8 can do and more
-- your c++ program can run ecmascript and additional features that you choose to incorporate 
+- your c++ program can run ecmascript and additional features that you choose to incorporate
 - for example, features that are available in c++ but not available with javascript
 
 **chrome browser javascript engine**
 
+![chrome browser javascript engine](assets/img/chrome%20browser%20javascript%20engine.png)
+
 **nodejs summary**
+
+![nodejs javascript runtime](assets/img/nodejs%20javascript%20runtime.png)
+
 - nodejs is an open source, cross platform javascript runtime environment
 - it is not a language, it is not a framework
 - capable of executing javascript code outside a browser
@@ -35,18 +40,18 @@
 - it consists of c++ files which form the core features and javascript files which expose common utilities and some of the c++ features for easier consumption
 
 **executing javascript with node**
-- 1. node repl
-    read
-    evaluate
-    print
-    loop
-
-- 2. executing code in a javascript file in the command line
+1. node repl
+    - read
+    - evaluate
+    - print
+    - loop
+2. executing code in a javascript file in the command line
 
 **browser vs nodejs**
-- in the browser, most of the time what ypu are doing is interacting with the dom, or other web platform apis like cookies. you dont have the document, window and all the other objects that are provided by the browser
-- in the browser, we dont have all the nice apis that nodejs provides through its modules. for example the file-system access functionality
--with nodejs, you control the environment
+- in the browser, most of the time what you are doing is interacting with the dom, or other web platform apis like cookies
+- in nodejs, you don't have the document, window and all the other objects that are provided by the browser
+- in the browser, we don't have all the nice apis that nodejs provides through its modules, for example the file-system access functionality
+- with nodejs, you control the environment
 - with a browser, you are at the mercy of what the users choose
 
 ---
@@ -54,7 +59,7 @@
 ## modules
 
 - a module is an encapsulated and reusable chunk of code that has its own context
-- in nodejs, each file is treated as a seperate module
+- in nodejs, each file is treated as a separate module
 
 **types of modules**
 - local modules - modules that we create in our application
@@ -63,7 +68,7 @@
 
 **commonjs**
 - commonjs is a standard that states how a module should be structured and shared
-- nodejs is adopted commonjs when it started out and is what you will see in code bases
+- nodejs adopted commonjs when it started out and is what you will see in code bases
 
 ### local modules summary
 - in nodejs, each file is a module that is isolated by default
@@ -72,23 +77,31 @@
 - if the file we are requiring is a javascript file, we can skip specifying the extension and nodejs will infer it on our behalf
 
 **module scope summary**
+
+![iife](assets/img/iife.png)
+
 - each loaded module in nodejs is wrapped with an iife that provides private scoping of code
 - iife allows you to repeat variable or function names without any conflicts
 
 **module wrapper**
+
+![module wrapper step 1](<assets/img/module wrapper(1).png>)
+![module wrapper step 2](<assets/img/module wrapper(2).png>)
+![module wrapper step 3](<assets/img/module wrapper(3).png>)
+
 - every module in nodejs gets wrapped in an iife before being loaded
 - iife helps keep top-level variables scoped to the module rather than the global objects
 - the iife that wraps every module contains 5 parameters which are pretty important for the functioning of a module
 
 **es modules summary**
-es modules is the ecmascript standard for modules
-it was introduced with es2015
-nodejs 14 and above support es modules
-instead of module.exports, we use the export keyword
-the export can be default or named
-we import the exported variables or functions using the import keyword
-if it is a default export, we can assign any name while importing
-if it is a named export, the import name must be the same
+- es modules is the ecmascript standard for modules
+- it was introduced with es2015
+- nodejs 14 and above support es modules
+- instead of module.exports, we use the export keyword
+- the export can be default or named
+- we import the exported variables or functions using the import keyword
+- if it is a default export, we can assign any name while importing
+- if it is a named export, the import name must be the same
 
 ### built in modules
 - modules that nodejs ships with
@@ -96,24 +109,24 @@ if it is a named export, the import name must be the same
 - import the module before you can use it
 
 **focus**
-. path
-. events
-. fs
-. stream
-. http
+- path
+- events
+- fs
+- stream
+- http
 
 **path module**
 - the path module provides utilities for working with file and directory paths
-    . __filename
-    . __dirname
-    . basename()
-    . extname()
-    . parse()
-    . absolute()
-    . format()
-    . isAbsolute()
-    . join()
-    . resolve()
+    - __filename
+    - __dirname
+    - basename()
+    - extname()
+    - parse()
+    - absolute()
+    - format()
+    - isAbsolute()
+    - join()
+    - resolve()
 
 **NB: node:protocol**
 - makes it perfectly clear that the import is a nodejs builtin module
@@ -121,59 +134,82 @@ if it is a named export, the import name must be the same
 - avoids conflicts for future nodejs built in modules
 
 **callback pattern**
-- in javascript, function are first class object 
+- in javascript, functions are first class objects
 - object is a standalone entity that stores data as key-value pairs
 - class is a blueprint used to create those objects systematically
-- function that are pass into another function as parameters, also get called inside the function are called callback function
-- function that takes in another function as param/args or returns function are called high order function
+- functions that are passed into another function as parameters, and also get called inside that function, are called callback functions
+- functions that take in another function as a param/arg, or return a function, are called higher order functions
 
 **types of callbacks**
 - synchronous callbacks
 - asynchronous callbacks
 
 **synchronous callbacks**
+
+![synchronous callbacks](<assets/img/synchronous callbacks.png>)
+
 - a callback which is executed immediately is called a synchronous callback
 
 **asynchronous callbacks**
-- a callback that is often used to continue or resume code execution after an asychronous operation has completed
-- callbacks are used to delay the execution of a function until a particular time or event has occured
-- in nodejs have an asychronousnature to prevent blocking of execution
-- e.g reading data from a file, fetching data form a database or handling a network request
+
+![asynchronous callbacks in browser](<assets/img/asynchronous callbacks in browser.png>)
+
+- a callback that is often used to continue or resume code execution after an asynchronous operation has completed
+- callbacks are used to delay the execution of a function until a particular time or event has occurred
+- in nodejs, callbacks have an asynchronous nature to prevent blocking of execution
+- e.g reading data from a file, fetching data from a database or handling a network request
 
 **events module**
-- the events module allows us  to work with events in nodejs
-- an event is an action or an occurence that has happened in our application that we can respond to
+- the events module allows us to work with events in nodejs
+- an event is an action or an occurrence that has happened in our application that we can respond to
 - using the events module, we can dispatch our own custom events and respond to those custom events in a non-blocking manner
 
 **character sets and encoding**
 
+![binary data](<assets/img/binary data.png>)
+![character encoding](<assets/img/character encoding.png>)
+![character to binary format](<assets/img/character  binary format.png>)
+
 **streams and buffer**
+
+![buffer 0](<assets/img/buffer 0.png>)
+![buffer 1](<assets/img/buffer 1.png>)
+![buffer 2](<assets/img/buffer 2.png>)
+
 - a stream is a sequence of data that is being moved from one point to another over time
 - e.g: a stream of data over the internet being moved from one computer to another
 - e.g: a stream of data being transferred from one file to another within the same computer
 - process streams of data in chunks as they arrive instead of waiting for the entire data to be available before processing
 - e.g: watching a video on youtube
-- the data arrives in chunks and you watch in chunks and you watch in chunks while the rest of the data arrives over time
+- the data arrives in chunks and you watch in chunks while the rest of the data arrives over time
 - e.g: transferring file contents from fileA to fileB
 - the contents arrive in chunks and you transfer in chunks while the remaining contents arrive over time
 - prevents unnecessary data download and memory usage
-- stream is infact a built-in node module that inherits from the event emitter class
+- stream is in fact a built-in node module that inherits from the event emitter class
 - stream is rarely used directly, instead other modules internally use streams for their functioning
 
-**asychronous javascript**
-- javascript is its basic form is a synchronous, blocking, single-threaded language
-- synchronous: if we have two functions which log messages to the console, code execute top down, with only one line executing at any given time
-- blocking: no matter how long a previous process takes, the subsequent processes wont kick off until the former is completed. web app runs in a browser and it executes an intensive chunk of code without returning control to the browser, the browser can appear to be frozen
-- single threaded:a thread is simply a unit of a process that javascript program use to run task. each thread can only do one task at a time. javascript has just the one thread called main thread for executing any code.
+**asynchronous javascript**
+- javascript in its basic form is a synchronous, blocking, single-threaded language
+- synchronous: if we have two functions which log messages to the console, code executes top down, with only one line executing at any given time
+- blocking: no matter how long a previous process takes, the subsequent processes won't kick off until the former is completed. if a web app runs in a browser and it executes an intensive chunk of code without returning control to the browser, the browser can appear to be frozen
+- single threaded: a thread is simply a unit of a process that a javascript program uses to run a task. each thread can only do one task at a time. javascript has just the one thread, called the main thread, for executing any code
 - just javascript is not enough
-- we need new pieces which are outside of javascript to help us write asychronous code
+- we need new pieces which are outside of javascript to help us write asynchronous code
 - for front end, this is where web browsers come into play. for back end, this is where nodejs comes into play
-- web browsers and nodejs define functions and apis that allow us to register functions that should not be executed synchronously, and should instead be revoked asychronously when some kind of event occurs
-- for example, that could be the passage of time (setTimeout oe setInterval), the user's interaction with the mouse (addEventListener), data being read from a file system or the arrival of data over the network (callbacks, promises, async-await)
-you can let your code do several things at the same time without stopping or blocking your main thread
+- web browsers and nodejs define functions and apis that allow us to register functions that should not be executed synchronously, and should instead be invoked asynchronously when some kind of event occurs
+- for example, that could be the passage of time (setTimeout or setInterval), the user's interaction with the mouse (addEventListener), data being read from a file system or the arrival of data over the network (callbacks, promises, async-await)
+- you can let your code do several things at the same time without stopping or blocking your main thread
 
 **fs Module**
-- the file system (fs) module alllows you to work with the file system on your computerfb 
+- the file system (fs) module allows you to work with the file system on your computer
 
+**http and node**
 
-
+- hypertext transfer protocol
+- a protocol that defines a format for clients and servers to speak to each other
+- the client sends an http request and the server responds with an http response
+- we can create a web server using nodejs
+- nodejs has access to operating system functionality like networking
+- node has an event loop to run tasks asynchronously and is perfect for creating a web server that can simultaneously handle large volumes of requests
+- the node server we create should still respect the http format
+- the http module allows creation of web servers that can transfer data over http
