@@ -213,3 +213,41 @@
 - node has an event loop to run tasks asynchronously and is perfect for creating a web server that can simultaneously handle large volumes of requests
 - the node server we create should still respect the http format
 - the http module allows creation of web servers that can transfer data over http
+
+
+### nodejs internals
+
+**libuv**
+
+**<u>what?<u>**
+- libuv is a cross platform open source library written in C language
+
+**<u>why?<u>**
+- handles asynchronous non-blocking operations in nodejs
+
+**<u>How?<u>**
+- Thread pool
+- Event loop
+
+**Thread pool**
+
+**<u>Main Thread<u>**
+- hey libuv, i neeed to read file contents but that is a time consuming task. i dont want to block further code from being executed during this time. can i offload this task to you?
+
+**<u>Libuv<u>**
+- sure main thread. unlike you, who is single threaded, i have a pool of threads that i can use to run some of these time consuming task. when the task is done, the file contents are retrieved and the associated callback function can be run.
+
+**experiment 1 inference**
+- every method in node that has the "sync" suffix always runs on the main thread and is blocking
+
+**experiment 2 inference**
+- a few async methods like fs.readFile and crypto.pbkdf2 run on a separate thread in liibuv's thread pool. they do run synchronously in thier own thread but as far as the main thread is concerned, it appears as if the method is running asynchronously
+
+**experiment 3 inference**
+- libuv's thread pool has 4 threads
+
+**experiment 4 inference**
+- by increasing the thread pool size, we are able to improve the total time taken to run multiple calls of an asynchronous method like pbkdf2
+
+**experiment 5 inference**
+- increasing the thread pool size can help with performance but that is limited by the number of available cpu cores

@@ -272,3 +272,74 @@
 - Node has an event loop to run tasks asynchronously, which makes it well suited for a web server that needs to handle large volumes of requests simultaneously
 - The server we create with Node still needs to respect the HTTP format
 - The `http` module allows creation of web servers that can transfer data over HTTP
+
+---
+
+## Node.js Internals
+
+![Node.js Runtime](assets/img/nodejs%20runtime.png)
+
+### libuv
+
+- **<u>What?</u>** libuv is a cross platform, open source library written in C
+- **<u>Why?</u>** Handles asynchronous, non-blocking operations in Node.js
+- **<u>How?</u>**
+  - Thread pool
+  - Event loop
+
+#### Thread Pool
+
+- **<u>Main thread</u>**: "Hey libuv, I need to read file contents but that's a time consuming task. I don't want to block further code from being executed during this time. Can I offload this task to you?"
+- **<u>libuv</u>**: "Sure, main thread. Unlike you, who is single-threaded, I have a pool of threads that I can use to run some of these time-consuming tasks. When the task is done, the file contents are retrieved and the associated callback function can be run."
+
+![Thread Pool Visualization](assets/img/thread%20pool%20visualization.png)
+
+#### Experiment 1 - Synchronous Methods
+
+- Every method in Node.js that has the `Sync` suffix always runs on the main thread and is blocking
+- [`concepts/thread/exp1.js`](concepts/thread/exp1.js) runs three sequential `crypto.pbkdf2Sync()` calls - since each one blocks the main thread until it completes, the total logged time is roughly the sum of all three hashes
+
+![Synchronous Methods Execution](assets/img/synchronous%20methods%20execution.png)
+
+#### Experiment 2 - Asynchronous Methods
+
+- A few async methods, like `fs.readFile` and `crypto.pbkdf2`, run on a separate thread in libuv's thread pool
+- They do run synchronously in their own thread, but as far as the main thread is concerned, it appears as if the method is running asynchronously
+- [`concepts/thread/exp2.js`](concepts/thread/exp2.js) fires three `crypto.pbkdf2()` calls in a loop - because they run in parallel across libuv's thread pool, all three callbacks report roughly the same elapsed time instead of stacking up one after another
+
+![Asynchronous Methods Execution](assets/img/asynchronous%20methods%20execution.png)
+
+#### Experiment 3 - Thread Pool Size (Default)
+
+- libuv's thread pool has 4 threads by default
+- [`concepts/thread/exp3.js`](concepts/thread/exp3.js) fires 5 `crypto.pbkdf2()` calls in a loop - with only 4 threads available, the first 4 hashes complete together while the 5th has to wait for a thread to free up, so it reports roughly double the time of the others
+
+![5 Asynchronous Method Execution](<assets/img/5 asynchronous method execution.png>)
+
+#### Experiment 4 - Increasing Thread Pool Size
+
+- By increasing the thread pool size, we are able to improve the total time taken to run multiple calls of an asynchronous method like `pbkdf2`
+- [`concepts/thread/exp4.js`](concepts/thread/exp4.js) sets `process.env.UV_THREADPOOL_SIZE = 5` before the loop, so all 5 `crypto.pbkdf2()` calls get their own thread and complete together, unlike in Experiment 3
+
+#### Experiment 5 - Thread Pool Size vs. CPU Cores
+
+- Increasing the thread pool size can help with performance, but that improvement is limited by the number of available CPU cores
+- Once the thread pool size exceeds the number of CPU cores, threads start competing for the same cores and additional gains taper off
+
+> **NB:** The CPU used in the images below has just 8 cores
+
+![Asynchronous Methods vs Cores - 0 pbkdf2 calls (baseline)](<assets/img/asynchronous methods vs cores (0).png>)
+
+- 0 `pbkdf2` calls - baseline, idle state - no thread pool work running, so no core is being driven by libuv
+
+![Asynchronous Methods vs Cores - 1 pbkdf2 call](<assets/img/asynchronous methods vs cores (1).png>)
+
+- 1 `pbkdf2` call - a single async call occupies a single thread, so only 1 of the 8 cores is put to work
+
+![Asynchronous Methods vs Cores - 8 pbkdf2 calls](<assets/img/asynchronous methods vs cores (8).png>)
+
+- 8 `pbkdf2` calls - matches the number of CPU cores exactly, so each call runs on its own core in parallel - full utilization and the fastest possible completion time for this many calls
+
+![Asynchronous Methods vs Cores - 16 pbkdf2 calls](<assets/img/asynchronous methods vs cores (16).png>)
+
+- 16 `pbkdf2` calls - double the number of cores, so calls now have to share cores two at a time - all 8 cores are maxed out, but since each core is time-slicing 2 calls, total completion time roughly doubles instead of improving further, showing the CPU core ceiling on thread pool gains
