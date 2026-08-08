@@ -297,7 +297,7 @@
 #### Experiment 1 - Synchronous Methods
 
 - Every method in Node.js that has the `Sync` suffix always runs on the main thread and is blocking
-- [`concepts/thread/exp1.js`](concepts/thread/exp1.js) runs three sequential `crypto.pbkdf2Sync()` calls - since each one blocks the main thread until it completes, the total logged time is roughly the sum of all three hashes
+- [`concepts/internals/thread-exp1.js`](concepts/internals/thread-exp1.js) runs three sequential `crypto.pbkdf2Sync()` calls - since each one blocks the main thread until it completes, the total logged time is roughly the sum of all three hashes
 
 ![Synchronous Methods Execution](assets/img/synchronous%20methods%20execution.png)
 
@@ -305,21 +305,21 @@
 
 - A few async methods, like `fs.readFile` and `crypto.pbkdf2`, run on a separate thread in libuv's thread pool
 - They do run synchronously in their own thread, but as far as the main thread is concerned, it appears as if the method is running asynchronously
-- [`concepts/thread/exp2.js`](concepts/thread/exp2.js) fires three `crypto.pbkdf2()` calls in a loop - because they run in parallel across libuv's thread pool, all three callbacks report roughly the same elapsed time instead of stacking up one after another
+- [`concepts/internals/thread-exp2.js`](concepts/internals/thread-exp2.js) fires three `crypto.pbkdf2()` calls in a loop - because they run in parallel across libuv's thread pool, all three callbacks report roughly the same elapsed time instead of stacking up one after another
 
 ![Asynchronous Methods Execution](assets/img/asynchronous%20methods%20execution.png)
 
 #### Experiment 3 - Thread Pool Size (Default)
 
 - libuv's thread pool has 4 threads by default
-- [`concepts/thread/exp3.js`](concepts/thread/exp3.js) fires 5 `crypto.pbkdf2()` calls in a loop - with only 4 threads available, the first 4 hashes complete together while the 5th has to wait for a thread to free up, so it reports roughly double the time of the others
+- [`concepts/internals/thread-exp3.js`](concepts/internals/thread-exp3.js) fires 5 `crypto.pbkdf2()` calls in a loop - with only 4 threads available, the first 4 hashes complete together while the 5th has to wait for a thread to free up, so it reports roughly double the time of the others
 
 ![5 Asynchronous Method Execution](<assets/img/5 asynchronous method execution.png>)
 
 #### Experiment 4 - Increasing Thread Pool Size
 
 - By increasing the thread pool size, we are able to improve the total time taken to run multiple calls of an asynchronous method like `pbkdf2`
-- [`concepts/thread/exp4.js`](concepts/thread/exp4.js) sets `process.env.UV_THREADPOOL_SIZE = 5` before the loop, so all 5 `crypto.pbkdf2()` calls get their own thread and complete together, unlike in Experiment 3
+- [`concepts/internals/thread-exp4.js`](concepts/internals/thread-exp4.js) sets `process.env.UV_THREADPOOL_SIZE = 5` before the loop, so all 5 `crypto.pbkdf2()` calls get their own thread and complete together, unlike in Experiment 3
 
 #### Experiment 5 - Thread Pool Size vs. CPU Cores
 
@@ -343,3 +343,31 @@
 ![Asynchronous Methods vs Cores - 16 pbkdf2 calls](<assets/img/asynchronous methods vs cores (16).png>)
 
 - 16 `pbkdf2` calls - double the number of cores, so calls now have to share cores two at a time - all 8 cores are maxed out, but since each core is time-slicing 2 calls, total completion time roughly doubles instead of improving further, showing the CPU core ceiling on thread pool gains
+
+#### Experiment 6 - Network I/O
+
+- `https.request` is a network I/O operation, not a CPU-bound operation
+- It does not use the thread pool
+- Instead, libuv delegates the work to the operating system kernel, and, where possible, polls the kernel to see whether the request has completed
+- [`concepts/internals/network-io.js`](concepts/internals/network-io.js) fires 2 `https.request()` calls in a loop - since network I/O relies on the OS's native async mechanism instead of the thread pool, both requests complete in roughly the same amount of time, with none of the "waiting for a free thread" delay seen in Experiment 3
+- Although both `crypto.pbkdf2` and `https.request` are asynchronous, `https.request` does not use the thread pool, and it is not affected by the number of CPU cores either
+
+#### libuv and Async Methods Summary
+
+- In Node.js, async methods are handled by libuv, in one of two ways:
+  1. **Native async mechanism**
+  2. **Thread pool**
+- Whenever possible, libuv uses the OS's native async mechanism so as to avoid blocking the main thread
+- Since this is part of the kernel, there is a different mechanism per OS - `epoll` for Linux, `kqueue` for macOS, and I/O Completion Ports (IOCP) on Windows
+- Relying on native async mechanisms makes Node.js scalable, since the only limitation is the operating system kernel
+- An example of this type of operation is network I/O
+- If there is no native async support and the task is file I/O or CPU-intensive, libuv falls back to the thread pool to avoid blocking the main thread
+- Although the thread pool preserves asynchrony with respect to Node's main thread, it can still become a bottleneck if all threads are busy
+
+> **Thread pool**: a thread pool is a group of pre-instantiated, idle threads that stand ready to receive work. When many short tasks need to be done rather than a few long ones, using a thread pool is preferred over instantiating a new thread per task. This avoids the performance cost of constantly creating and tearing down threads. If you tune the thread pool size, server components can reuse threads instead of creating new ones at runtime for every request, which improves overall system performance.
+>
+> **Native async mechanism**: libuv's *preferred* way of handling async work, used whenever the operating system itself can notify libuv that a task has finished, instead of libuv having to occupy one of its own worker threads for the duration of the task. This applies to most **network I/O** - TCP/UDP sockets, HTTP(S) requests, etc. When you call something like `https.request()`, the OS opens a non-blocking socket and hands it back to libuv immediately, and no worker thread sits around blocked on that connection.
+>
+> Instead, libuv registers the socket with the OS kernel's readiness/completion API - `epoll` on Linux, `kqueue` on macOS/BSD, and I/O Completion Ports (IOCP) on Windows. These APIs let a single thread ask the kernel "which of these sockets are ready to be read from/written to (or have completed)?" in one call, instead of needing a dedicated thread per socket to watch it. On every iteration of the event loop, in its **poll phase**, libuv checks in with this kernel API, and when a socket is ready (or an operation has completed), invokes the associated JavaScript callback on the main thread.
+>
+> This is fundamentally different from the thread pool: the thread pool occupies an actual OS thread, blocked for the task's duration, capped by pool size (default 4) and, beyond that, CPU core count. The native async mechanism occupies no worker thread at all while waiting - the kernel does the "waiting," and libuv is simply notified. That's why [`concepts/internals/network-io.js`](concepts/internals/network-io.js) can fire off multiple `https.request()` calls that all complete in roughly the same time, unaffected by `UV_THREADPOOL_SIZE` or the number of CPU cores - and it's a big part of why Node.js scales well as a web server: thousands of concurrent connections doesn't mean thousands of OS threads, just the kernel efficiently tracking sockets while libuv's single-threaded event loop reacts as it's notified.

@@ -251,3 +251,32 @@
 
 **experiment 5 inference**
 - increasing the thread pool size can help with performance but that is limited by the number of available cpu cores
+
+
+**network i/o**
+- https.request is a network input/output operation and not a cpu bond operation
+- it does not use the thread pool
+- libuv instead delegates the work to the operating system kernel and whatever possible, it will poll the kernel and see if the request has completed
+
+**experiment 6 inference**
+- although both crypto.pbkdf2 and https.request are asynchronous, https.request method does not seem to use the thread pool
+- https.request does not seem to be affected by the number of CPU cores either
+
+**libuv and async methods summary**
+- in nodejs, async methods are handled by libuv
+- they are handled in two different ways:
+    1. native async mechanism
+    2. thread pool
+
+- whenever possible, libuv will use native async mechanism in the os sos as to avoid blocking the main thread
+- since this is part of the kernel, there is different mechanism for each os. we have epoll for linux, kqueue for macos and io completion port on windows
+- relying on native async mechanisms makes node scalable as the only limitation is the operating system kernel
+- example of this type is a network i/o operation
+-if there is no native async support and the task is file i/o or cpu intensive, libuv uses the thread pool to avoid blocking the main thread
+- although the thread pool preserves asynchronously with respect to node's main thread, it can still become a bottleneck if all threads are busy
+
+**<u>note</u>** 
+- thread pool: a thread pool is a group of pre-instantiated, idle threads that stand ready to receive work. when many short tasks need to be done rather than a few long tasks, thread pool usage is preferred over instantiating new threads for each task. using thread pools can prevent diminshed system performance that is caused by creating many new threads. if you tune thread pool sizes, the server components can reuse threads. the reuse of threads eliminates the need to create new threads at run time to handle each new request, which can improve system performance.
+
+- Native async mechanism:
+
