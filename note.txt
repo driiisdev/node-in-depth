@@ -280,3 +280,32 @@
 
 - Native async mechanism:
 
+**event loop**
+- few questions
+. Q: whenever an async task completes in libuv, at what point does node decide to run the associated callback function on the call stack?
+- A: callback functions are executed only when the call stack is empty. the normal flow of execution fill not be interrupted to run a callback function
+. Q: what about async methods like setTimeout and setInterval which also delay the execution of a callback function?
+- A: setTimeout and setInterval callbacks are given first priority
+. Q: if two async tasks such as setTimeout and readFile complete at the same time, how does node decide which callback function to run on the call stack?
+- A: timer callbacks are executed before i/o callbacks even if both are ready at the exact same time
+
+- it is a C program and is part of libuv
+- a design pattern that orchestrates or co-ordinates the execution of synchronous and asynchronous code in nodejs
+1. visual representation
+2. run a few experiments
+
+**event loop - execution order**
+- user written synchronous javascript code takes priority over async code that the runtime would like to execute
+- only after the call stack is empty, the event loop comes into picture
+1. any callbacks in the micro task queues are executed. first, tasks in the nexttick queue and only then tasks in the promise queue
+2. all callbacks within the timer queue are executed
+3. callbacks in the micro task queues if present are executed. again, first tasks in the nextTick queue and then tasks in the promise queue
+4. all callbacks in the micro task queues if present are executed. nextTick queue followed by promise queue
+5. callbacks in the micro task queues if present are executed. nextTick queue followed by promise queue
+6. all callbacks in the check queue are executed
+7. callbacks in the micro task queues if present are executed. again, first tasks in the nextTick queue and then tasks in the promise queue
+8. all callbacks in the close queue are executed
+9. for one final time in the same loop, the micro task queues are executed. nextTick queue followed by promise queue  
+- if there are more callbacks to be processed, the loop is kept alive for one more run and the same steps are repeated
+- on the other hand, if all callbacks are executed and there is no more code to process, the event loop experiments
+

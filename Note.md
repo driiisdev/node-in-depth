@@ -371,3 +371,53 @@
 > Instead, libuv registers the socket with the OS kernel's readiness/completion API - `epoll` on Linux, `kqueue` on macOS/BSD, and I/O Completion Ports (IOCP) on Windows. These APIs let a single thread ask the kernel "which of these sockets are ready to be read from/written to (or have completed)?" in one call, instead of needing a dedicated thread per socket to watch it. On every iteration of the event loop, in its **poll phase**, libuv checks in with this kernel API, and when a socket is ready (or an operation has completed), invokes the associated JavaScript callback on the main thread.
 >
 > This is fundamentally different from the thread pool: the thread pool occupies an actual OS thread, blocked for the task's duration, capped by pool size (default 4) and, beyond that, CPU core count. The native async mechanism occupies no worker thread at all while waiting - the kernel does the "waiting," and libuv is simply notified. That's why [`concepts/internals/network-io.js`](concepts/internals/network-io.js) can fire off multiple `https.request()` calls that all complete in roughly the same time, unaffected by `UV_THREADPOOL_SIZE` or the number of CPU cores - and it's a big part of why Node.js scales well as a web server: thousands of concurrent connections doesn't mean thousands of OS threads, just the kernel efficiently tracking sockets while libuv's single-threaded event loop reacts as it's notified.
+
+### Event Loop
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- It is a C program, and part of libuv
+- A design pattern that orchestrates/coordinates the execution of synchronous and asynchronous code in Node.js
+
+#### Q&A
+
+- **Q: Whenever an async task completes in libuv, at what point does Node decide to run the associated callback function on the call stack?**
+  - A: Callback functions are only executed once the call stack is empty - the normal flow of execution is never interrupted to run a callback
+- **Q: What about async methods like `setTimeout` and `setInterval`, which also delay the execution of a callback function?**
+  - A: `setTimeout`/`setInterval` callbacks are given first priority among the async callbacks waiting to run
+- **Q: If two async tasks, such as `setTimeout` and `readFile`, complete at the same time, how does Node decide which callback to run on the call stack first?**
+  - A: Timer callbacks are executed before I/O callbacks, even if both become ready at the exact same time
+
+#### Visual Representation
+
+![Synchronous Code Execution in Node.js](assets/img/synchronous%20code%20execution%20in%20nodejs.png)
+
+- With purely synchronous code, every function call is pushed onto and popped off the call stack top to bottom, with nothing else able to run in between
+
+![Asynchronous Code Execution in Node.js (1)](<assets/img/asynchronous code execution in nodejs (1).png>)
+![Asynchronous Code Execution in Node.js (2)](<assets/img/asynchronous code execution in nodejs (2).png>)
+![Asynchronous Code Execution in Node.js (3)](<assets/img/asynchronous code execution in nodejs (3).png>)
+![Asynchronous Code Execution in Node.js (4)](<assets/img/asynchronous code execution in nodejs (4).png>)
+
+- With async code, calls that trigger async work (timers, I/O, etc.) return immediately and are handed off to libuv, letting the call stack continue emptying out
+- Once the call stack is empty, the event loop picks up completed callbacks from their respective queues and pushes them onto the call stack to run, one at a time
+
+#### Event Loop - Execution Order
+
+- User-written synchronous JavaScript code always takes priority over any async code the runtime would like to execute
+- Only once the call stack is empty does the event loop come into play
+
+Per iteration of the loop:
+
+1. Any callbacks in the microtask queues are executed - first the `nextTick` queue, then the Promise queue
+2. All callbacks in the **timers** queue are executed
+3. Microtask queues are drained again - `nextTick` queue, then Promise queue
+4. Microtask queues are drained again - `nextTick` queue, then Promise queue
+5. Microtask queues are drained again - `nextTick` queue, then Promise queue
+6. All callbacks in the **check** queue are executed
+7. Microtask queues are drained again - `nextTick` queue, then Promise queue
+8. All callbacks in the **close** queue are executed
+9. For one final time in the same loop iteration, the microtask queues are drained - `nextTick` queue, then Promise queue
+
+- If there are more callbacks left to process, the loop stays alive for another iteration and the same steps repeat
+- If all callbacks have been executed and there's no more code left to process, the event loop exits
