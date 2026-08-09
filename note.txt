@@ -309,3 +309,20 @@
 - if there are more callbacks to be processed, the loop is kept alive for one more run and the same steps are repeated
 - on the other hand, if all callbacks are executed and there is no more code to process, the event loop experiments
 
+**microtask queue**
+
+// The microtask queue is a queue of tasks that are executed after the current operation completes and before the event loop continues. This means that any callbacks scheduled with process.nextTick will be executed before any I/O events or timers, making it useful for deferring work until the next iteration of the event loop.
+
+//process.nextTick is a method in Node.js that allows you to schedule a callback function to be invoked in the next iteration of the event loop, before any I/O events or timers. It is part of the microtask queue, which means that it has a higher priority than other tasks in the event loop, such as setTimeout or setImmediate.
+
+// promise.then is another way to schedule a callback function to be executed in the microtask queue. When a promise is resolved, its .then() method is called, and the callback function passed to it is added to the microtask queue. This means that the callback will be executed after the current operation completes and before any I/O events or timers.
+
+// process.nextTick and promise.then are both useful for deferring work until the next iteration of the event loop, but they have different use cases. process.nextTick is typically used for scheduling callbacks that need to be executed immediately after the current operation completes, while promise.then is used for handling asynchronous operations that may take some time to complete. the process.nexttick queue is processed before the promise queue, so if you have both process.nextTick and promise.then callbacks scheduled, the process.nextTick callbacks will be executed first.
+
+- note on process.nextTick()
+- use of process.nextTick is discouraged as it can cause the rest of the event loop to starve
+- if one endlessly call process.nextTick. the control will never make it past the microtask queue
+
+- <u> two main reasons to use process.nextTick <u>
+1. to allow users to handle errors, cleanup any then unneeded resources, or perhaps try the request again before the event loop continues
+2. to allow a callback to run after the call stack has unwound but before the event loop continues

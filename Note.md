@@ -421,3 +421,51 @@ Per iteration of the loop:
 
 - If there are more callbacks left to process, the loop stays alive for another iteration and the same steps repeat
 - If all callbacks have been executed and there's no more code left to process, the event loop exits
+
+#### Microtask Queue
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The microtask queue is what steps 1, 3, 4, 5, 7 and 9 above are draining - it holds tasks that run after the current operation completes, but before the event loop moves on to the next phase (timers, check, I/O, close, etc.)
+- There are two microtask queues, always processed in the same order: the **`nextTick` queue**, then the **Promise queue**
+
+##### `process.nextTick()`
+
+- Schedules a callback to run on the next microtask checkpoint, before any I/O events or timers
+- Belongs to the `nextTick` queue, which is always drained before the Promise queue
+
+##### `promise.then()`
+
+- Schedules a callback on the **Promise queue** - when a promise resolves, its `.then()` callback is queued to run after the current operation completes and before any I/O events or timers
+
+- `process.nextTick()` and `promise.then()` are both used to defer work until the next iteration of the event loop, but for different use cases:
+  - `process.nextTick()` is for a callback that needs to run immediately after the current operation completes
+  - `promise.then()` is for handling asynchronous work that may take some time to resolve
+- Since the `nextTick` queue is processed before the Promise queue, `process.nextTick()` callbacks always run before `promise.then()` callbacks when both are scheduled
+
+- [`concepts/internals/microtask-queue.js`](concepts/internals/microtask-queue.js) schedules three `process.nextTick()` calls (the second of which nests another `nextTick()` inside it), followed by three `Promise.resolve().then()` calls (the second nests another `.then()`, and the third nests a `process.nextTick()`). The logged output is:
+
+  ```text
+  This is process.nextTick callback 1
+  This is process.nextTick callback 2
+  This is process.nextTick callback 3
+  This is the nested process.nextTick callback
+  This is promise.then callback 1
+  This is promise.then callback 2
+  This is promise.then callback 3
+  This is the nested promise.then callback
+  This is process.nextTick callback 4
+  ```
+
+  - The `nextTick` queue is drained completely - including the nested `nextTick` callback added while it was still draining - before the Promise queue gets a turn
+  - Even though `process.nextTick callback 4` is scheduled from inside `promise.then callback 3`, it doesn't jump the line - by that point the engine is already draining the Promise queue for this checkpoint, so the new `nextTick` callback has to wait for the next checkpoint, after the nested `promise.then` callback
+
+> **Note on `process.nextTick()`**
+>
+> - Overusing `process.nextTick()` is discouraged, since it can starve the rest of the event loop
+> - If you call `process.nextTick()` recursively without end, control never makes it past the microtask queue - timers, I/O, and everything else in the event loop is blocked indefinitely
+>
+> **Two main reasons to use `process.nextTick()`:**
+>
+> 1. To let users handle errors, clean up any now-unneeded resources, or perhaps retry the request, before the event loop continues
+> 2. To let a callback run after the call stack has unwound but before the event loop continues to the next phase
