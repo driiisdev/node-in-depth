@@ -469,3 +469,38 @@ Per iteration of the loop:
 >
 > 1. To let users handle errors, clean up any now-unneeded resources, or perhaps retry the request, before the event loop continues
 > 2. To let a callback run after the call stack has unwound but before the event loop continues to the next phase
+
+#### Timer Queue
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The timer queue is a priority queue implementation that holds scheduled `setTimeout`/`setInterval` timers, ordered by their expiration time
+- It's implemented as a min-heap, so the timer with the earliest expiration time always sits at the root - this keeps inserting a new timer and finding the next one to run efficient
+- On the **timers** phase of each event loop iteration, the queue is checked for any expired timers and their callbacks are executed in order of expiration
+
+- [`concepts/internals/timer-queue.js`](concepts/internals/timer-queue.js) schedules three `setTimeout()` calls with different delays - `1000ms` (nesting a `promise.then()`), `500ms` (nesting a `process.nextTick()`), and `0ms` - alongside the same three `process.nextTick()` and three `promise.then()` calls used in the microtask queue experiment above. The logged output is:
+
+  ```text
+  This is process.nextTick callback 1
+  This is process.nextTick callback 2
+  This is process.nextTick callback 3
+  This is the nested process.nextTick callback
+  This is promise.then callback 1
+  This is promise.then callback 2
+  This is promise.then callback 3
+  This is the nested promise.then callback
+  This is process.nextTick callback 4
+  This is setTimeout callback 3
+  This is setTimeout callback 2
+  This is the inner next tick inside setTimeout
+  This is setTimeout callback 1
+  This is the inner promise.then inside setTimeout
+  ```
+
+  - All of the top-level microtask work still drains completely before any timer callback runs - the event loop doesn't touch the `setTimeout` callbacks until every `nextTick`/`promise.then` callback above has run
+  - With staggered delays, the timers no longer expire together and get processed as one batch (as they did when all three were `0ms`) - each timer callback now runs on its own turn as its delay elapses, in ascending order of expiration: callback 3 (`0ms`) → callback 2 (`500ms`) → callback 1 (`1000ms`)
+  - Because each timer fires individually now instead of being snapshotted as a group, the event loop gets a chance to drain the microtask queue right after each timer callback finishes, before moving on - so callback 2's inner `process.nextTick` logs immediately after callback 2, and callback 1's inner `promise.then` logs immediately after callback 1, rather than both inner microtasks being deferred and bunched together at the end like in the original all-`0ms` version of this file
+
+**Experiment inference:** callbacks in the microtask queues are executed in between the execution of callbacks in the timer queue - and with staggered delays this is even clearer, since each inner microtask now runs directly after its own timer callback and before the next timer fires
+
+**Experiment inference:** timer queue callbacks execute in order of expiration time, not registration order - when delays are equal (as in the original `0ms`/`0ms`/`0ms` version of this file), that resolves as FIFO by registration order as a tiebreak, but with distinct delays of `1000ms`, `500ms`, and `0ms`, the shortest delay runs first and the longest runs last

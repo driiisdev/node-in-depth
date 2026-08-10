@@ -326,3 +326,16 @@
 - <u> two main reasons to use process.nextTick <u>
 1. to allow users to handle errors, cleanup any then unneeded resources, or perhaps try the request again before the event loop continues
 2. to allow a callback to run after the call stack has unwound but before the event loop continues
+
+**timer queue**
+// timer queue is a simple priority queue implementation for timers. It is used to manage the scheduling of timer callbacks in Node.js. The queue maintains a list of timers sorted by their expiration time, allowing for efficient retrieval of the next timer to execute.
+
+// The timer queue is implemented as a min-heap, where the timer with the earliest expiration time is always at the root of the heap. This allows for efficient insertion and removal of timers, as well as quick access to the next timer to execute.
+
+// The timer queue is used by the Node.js event loop to manage the execution of timer callbacks. When a timer is scheduled, it is added to the timer queue with its expiration time. The event loop then checks the timer queue for any expired timers and executes their callbacks in order of their expiration time.
+
+**<u>experiment inference</u>**
+callbacks in microtask queues are executed in between the execution of callbacks in the timer queue
+
+**<u>experiment inference</u>**
+timer queue callbacks are executed in FIFO order
