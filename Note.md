@@ -504,3 +504,28 @@ Per iteration of the loop:
 **Experiment inference:** callbacks in the microtask queues are executed in between the execution of callbacks in the timer queue - and with staggered delays this is even clearer, since each inner microtask now runs directly after its own timer callback and before the next timer fires
 
 **Experiment inference:** timer queue callbacks execute in order of expiration time, not registration order - when delays are equal (as in the original `0ms`/`0ms`/`0ms` version of this file), that resolves as FIFO by registration order as a tiebreak, but with distinct delays of `1000ms`, `500ms`, and `0ms`, the shortest delay runs first and the longest runs last
+
+#### I/O Queue
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The I/O queue holds callbacks for completed I/O operations (e.g. `fs.readFile`), processed during the **poll** phase of the event loop
+- Callbacks are queued in the order their operations complete, and are drained in that (FIFO) order
+
+- [`concepts/internals/io-queue.js`](concepts/internals/io-queue.js) fires an `fs.readFile()` call alongside a `process.nextTick()`, a `promise.then()`, and a `setTimeout(0)`. The logged output is:
+
+  ```text
+  This is process.nextTick callback 1
+  This is promise.then callback 1
+  This is setTimeout callback 1
+  This is fs.readFile callback 1
+  ```
+
+  - The microtask queues (`nextTick`, then Promise) drain first, before the event loop reaches either the timers phase or the poll phase
+  - Even though `readFile` was called before `setTimeout`, its callback runs last - reading the file is genuinely asynchronous work that has to complete first, while the `0ms` timer is already expired by the time the event loop reaches the timers phase, so it's ready to run before the I/O callback ever queues up
+
+**Experiment inference:** callbacks in the microtask queues are executed before callbacks in the I/O queue
+
+**Experiment inference:** when running `setTimeout` with a `0ms` delay alongside an async I/O method, the order of execution between them can never be guaranteed - it depends on how long the I/O operation actually takes to complete relative to the timer
+
+**Experiment inference:** I/O queue callbacks are executed after both the microtask queue callbacks and the timer queue callbacks

@@ -339,3 +339,18 @@ callbacks in microtask queues are executed in between the execution of callbacks
 
 **<u>experiment inference</u>**
 timer queue callbacks are executed in FIFO order
+
+**i/o queue**
+// i/o queue is a queue of pending i/o operations. It is used to manage the order in which i/o operations are executed, ensuring that they are processed in a controlled manner. The queue allows for efficient handling of multiple i/o requests, preventing resource contention and improving overall performance.
+// The i/o queue is typically implemented as a data structure that holds pending i/o operations, such as read and write requests. Each operation is represented as an object containing relevant information, such as the type of operation, the target resource, and any associated data. The queue processes these operations in a first-in-first-out (FIFO) manner, ensuring that they are executed in the order they were received.
+// The i/o queue can be implemented using various data structures, such as linked lists or arrays, depending on the specific requirements of the system. It may also include mechanisms for prioritizing certain operations, allowing for more critical requests to be processed ahead of others. Additionally, the queue may support features such as timeouts and cancellation of pending operations, providing flexibility in managing i/o tasks. Overall, the i/o queue plays a crucial role in optimizing the performance and responsiveness of systems that rely on asynchronous i/o operations.
+
+**<u>experiment inference<u>**
+- callbacks in the microtask queues are executed before callbacks in the i/o queue
+
+**<u>experiment inference<u>**
+- when running setTimeout with delay oms and and i/o async method, the order of execution can never be guaranteed
+
+**<u>experiment inference<u>**
+- i/o queue callbacks are executed after microtask queue callbacks and timer queue callbacks
+
