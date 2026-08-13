@@ -377,3 +377,21 @@ timer queue callbacks are executed in FIFO order
 
 **<u>experiment inference<u>**
 - when running setTimeout with delay 0ms and setImmediate method, the order of execution can never be guaranteed
+
+**close queue**
+**<u>experiment inference<u>**
+- close queue callbacks are executed after all other queues callbacks in a given iteration of the event loop
+
+
+**event loop summary**
+- the event loop is a c program that orchestrates or co-ordinates the execution of synchronous and asynchronous code in nodejs
+- it co-ordinates the execution of callbacks in six different queues
+- they are nextTick, Promises, timer, I/O, check and close queues
+. we use process.nextTick() method to queue into the nextTick queue
+. we resolve or reject a promise to queue into the promise queue
+. we use setTimeout or setInterval to queue into the timer queue
+. execute an async method to queue into the i/o queue
+. use setImmediate function to queue into the check queue and finally
+. attach close event listeners to queue into the close queue
+. the order of execution follows the same order listed hypertext
+. nextTick and promises queues are excuted in between eacg queue and also in between each callback execution in the timer and check queues

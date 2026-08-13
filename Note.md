@@ -587,3 +587,77 @@ Per iteration of the loop:
 **Experiment inference:** microtask queue callbacks are executed after I/O callbacks and before check queue callbacks - and in between check queue callbacks too, since the microtask queues are drained after every single callback rather than once per phase
 
 **Experiment inference:** when running `setTimeout` with a `0ms` delay alongside `setImmediate` outside of an I/O callback, the relative order of execution between them can never be guaranteed - it depends on how quickly the loop reaches the timers phase relative to the poll/check phases on a given run
+
+#### Close Queue
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The close queue holds callbacks for `'close'` events - e.g. a socket destroyed with `socket.destroy()`, or a stream shut down with `.close()` - drained during the event loop's **close callbacks** phase, the final phase of a loop iteration
+- It comes after timers, poll (I/O), and check in the documented phase order - though as the experiment below (and the next section) shows, that "documented order" only reliably holds when I/O completes within the same iteration. A stream's `'close'` event is emitted through Node's own internal stream scheduling rather than a genuine libuv close-handle completion, so it can resolve faster than a slower, genuinely async I/O operation competing with it
+
+- [`concepts/internals/close-queue.js`](concepts/internals/close-queue.js) opens a readable stream on itself and immediately calls `.close()` on it, alongside a `setImmediate()`, a `setTimeout(0)`, a `promise.then()`, and a `process.nextTick()`. The logged output is:
+
+  ```text
+  This is process.nextTick 1.
+  This is Promise 1.
+  This is setTimeout 1.
+  This is setImmediate 1.
+  The readable stream has been closed.
+  ```
+
+  - Both microtask queues drain first, then the `0ms` timer, then the `setImmediate` in the check phase, and only then the stream's `close` callback - matching the documented timers → poll → check → close order, since there's no slower I/O operation here to compete with the close callback for a spot in an earlier loop iteration
+
+**Experiment inference:** close queue callbacks are executed after microtask queue callbacks, timer queue callbacks, and check queue callbacks have already run - it's the last of the six queues drained in a given iteration of the event loop
+
+#### Event Loop Summary
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The event loop is a C program, part of libuv, that orchestrates/coordinates the execution of synchronous and asynchronous code in Node.js
+- It coordinates the execution of callbacks across six different queues: `nextTick`, Promise, timer, I/O, check, and close
+  - `process.nextTick()` queues a callback into the `nextTick` queue
+  - Resolving or rejecting a promise queues its `.then()`/`.catch()` callback into the Promise queue
+  - `setTimeout()`/`setInterval()` queue a callback into the timer queue
+  - Firing off an async method (e.g. `fs.readFile()`, a network request) queues its callback into the I/O queue
+  - `setImmediate()` queues a callback into the check queue
+  - A handle or stream being closed (e.g. `socket.destroy()`, `readableStream.close()`) queues its `'close'` listener into the close queue
+- The order of execution follows the order those queues are listed above: microtasks (`nextTick`, then Promise) → timer → microtasks → I/O → microtasks → check → microtasks → close → microtasks
+- Crucially, the `nextTick` and Promise queues aren't only drained once per phase - they're drained **in between every single callback execution**, including in between each individual callback within the timer queue and within the check queue, not just once when the whole phase finishes
+
+- [`concepts/internals/event-loop-summary.js`](concepts/internals/event-loop-summary.js) ties every queue from this section together in a single file, to make that last point concrete: three `setTimeout(0)` calls, an `fs.readFile()` call, three `setImmediate()` calls, and a closed readable stream's `'close'` event - each of which nests its own `process.nextTick()` and `promise.then()` callback - alongside one top-level `process.nextTick()` and `promise.then()` pair. The logged output is:
+
+  ```text
+  [nextTick] top-level callback
+  [promise] top-level callback
+  [timer] callback 1
+    [nextTick] after timer callback 1
+    [promise] after timer callback 1
+  [timer] callback 2
+    [nextTick] after timer callback 2
+    [promise] after timer callback 2
+  [timer] callback 3
+    [nextTick] after timer callback 3
+    [promise] after timer callback 3
+  [check] callback 1
+    [nextTick] after check callback 1
+    [promise] after check callback 1
+  [check] callback 2
+    [nextTick] after check callback 2
+    [promise] after check callback 2
+  [check] callback 3
+    [nextTick] after check callback 3
+    [promise] after check callback 3
+  [close] readable stream closed
+    [nextTick] after close callback
+    [promise] after close callback
+  [i/o] fs.readFile callback
+    [nextTick] after i/o callback
+    [promise] after i/o callback
+  ```
+
+  - The top-level `nextTick`/`promise.then` pair runs first, before the loop touches any phase at all - the same "microtasks drain before the event loop continues" behavior seen at the start of every earlier experiment in this section
+  - Each of the three timer callbacks fires, and its own nested `nextTick`/`promise.then` pair drains **immediately after it and before the next timer callback runs** - proving the microtask checkpoint happens after every individual callback within the timers phase, not once for the whole phase. The same pattern holds for all three check-phase (`setImmediate`) callbacks
+  - The close callback fires *before* the I/O callback here, inverting the "documented" timer → I/O → check → close order from earlier in this section. That's not a contradiction - a stream's `'close'` event resolves through Node's internal stream scheduling and completes within this same loop iteration, while `fs.readFile()` reading this file back off disk is genuinely slower and only completes on a later pass through the poll phase - the same "order between I/O and everything else is never guaranteed" caveat from the I/O Queue and I/O Polling experiments, just made visible with more queues in the mix
+  - No matter which major queue's callback runs or in what order, its nested `nextTick`/`promise.then` pair always drains immediately afterward, before control ever moves on to the next callback - confirming that the microtask queues sit in between every single callback execution across the whole event loop, not just between phases
+
+**Experiment inference:** the `nextTick` and Promise queues are drained in between each of the six major queues, *and* in between every individual callback execution within the timer and check queues - a fresh microtask checkpoint runs after every single callback the event loop executes, not once per phase
