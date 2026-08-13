@@ -529,3 +529,61 @@ Per iteration of the loop:
 **Experiment inference:** when running `setTimeout` with a `0ms` delay alongside an async I/O method, the order of execution between them can never be guaranteed - it depends on how long the I/O operation actually takes to complete relative to the timer
 
 **Experiment inference:** I/O queue callbacks are executed after both the microtask queue callbacks and the timer queue callbacks
+
+#### I/O Polling
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- I/O readiness checking happens during the event loop's **poll** phase, which uses the OS's native polling mechanism (`epoll`/`kqueue`/IOCP) to check file descriptors like sockets and files for pending events
+- The poll phase doesn't block waiting on a single pending operation if there's other work already queued up - it polls, and a callback is only added to the I/O queue once its operation has actually completed
+- This is what allows Node.js to handle many concurrent connections without blocking the execution of other code
+
+- [`concepts/internals/io-polling.js`](concepts/internals/io-polling.js) extends the I/O queue experiment above by adding a `setImmediate()` call alongside the `fs.readFile()`, `process.nextTick()`, `promise.then()`, and `setTimeout(0)` calls. The logged output is:
+
+  ```text
+  This is process.nextTick callback 1
+  This is promise.then callback 1
+  This is setTimeout callback 1
+  This is setImmediate callback 1
+  This is fs.readFile callback 1
+  ```
+
+  - `setImmediate()` callbacks run in the **check** phase, which comes after the **poll** phase in a single loop iteration
+  - Even so, `setImmediate callback 1` logs before `fs.readFile callback 1` - when the event loop reaches the poll phase, the file read hasn't finished yet, and since a `setImmediate` callback is already queued up, the loop doesn't block waiting for the read. It moves on to the check phase, and the `fs.readFile` callback only runs once the read has actually completed and been added to the I/O queue - on a later pass through the poll phase
+
+**Experiment inference:** I/O events are polled, and their callbacks are only added to the I/O queue once the I/O has actually completed - the event loop won't block the poll phase waiting on them if there's other work already queued
+
+#### Check Queue
+
+![Event Loop](<assets/img/event loop (0).png>)
+
+- The check queue holds callbacks scheduled with `setImmediate()`, drained during the event loop's **check** phase, which runs immediately after the **poll** phase (where I/O callbacks run) in each iteration
+
+- [`concepts/internals/check-queue.js`](concepts/internals/check-queue.js) schedules a `process.nextTick()`, a `promise.then()`, two `setTimeout(0)` calls, three `setImmediate()` calls (the second nesting a `process.nextTick()` and a `promise.then()`), and an `fs.readFile()` call whose callback nests a `setImmediate()`, a `process.nextTick()`, and a `promise.then()`. The logged output is:
+
+  ```text
+  This is process.nextTick callback 1
+  This is promise.then callback 1
+  This is setTimeout callback 1
+  This is setTimeout callback 2
+  This is setImmediate callback 1
+  This is setImmediate callback 2
+  This is inner process.nextTick inside setImmediate callback 2
+  This is inner promise.then inside setImmediate callback 2
+  This is setImmediate callback 3
+  This is fs.readFile callback 1
+  This is inner process.nextTick inside fs.readFile callback 1
+  This is inner promise.then inside fs.readFile callback 1
+  This is inner setImmediate inside fs.readFile callback 1
+  ```
+
+  - Top-level microtasks drain first (`nextTick`, then Promise), then both `0ms` timers run - their relative order isn't strictly guaranteed since both expire at the same time, but they ran in registration order here
+  - All three top-level `setImmediate` callbacks then run in registration order during the check phase - `setImmediate callback 2`'s inner `nextTick`/`promise.then` callbacks drain immediately after it finishes and before `setImmediate callback 3` runs, since the microtask queues are checked after every individual callback, not just once per phase
+  - `fs.readFile callback 1` only runs after all three top-level `setImmediate` callbacks - the check phase for this iteration finishes before the loop cycles back around to the poll phase, where the now-completed read is finally picked up
+  - The inner `setImmediate` scheduled inside `fs.readFile callback 1` has to wait for the check phase of the *next* loop iteration - but the inner `process.nextTick`/`promise.then` callbacks scheduled alongside it still drain immediately, before that
+
+**Experiment inference:** check queue callbacks are executed after microtask queue callbacks, timer queue callbacks, and I/O queue callbacks have already run
+
+**Experiment inference:** microtask queue callbacks are executed after I/O callbacks and before check queue callbacks - and in between check queue callbacks too, since the microtask queues are drained after every single callback rather than once per phase
+
+**Experiment inference:** when running `setTimeout` with a `0ms` delay alongside `setImmediate` outside of an I/O callback, the relative order of execution between them can never be guaranteed - it depends on how quickly the loop reaches the timers phase relative to the poll/check phases on a given run

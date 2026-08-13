@@ -354,3 +354,26 @@ timer queue callbacks are executed in FIFO order
 **<u>experiment inference<u>**
 - i/o queue callbacks are executed after microtask queue callbacks and timer queue callbacks
 
+**i/o polling**
+
+// i/o checking is done by the event loop, which is implemented in libuv. The event loop uses a mechanism called "polling" to check for events on file descriptors (like sockets, files, etc.). When an event occurs, the event loop invokes the appropriate callback function to handle the event. This allows Node.js to perform non-blocking I/O operations, making it efficient for handling many concurrent connections.
+
+// The event loop continuously checks for events in a loop, and when it finds an event, it processes it and then goes back to checking for more events. This is why Node.js can handle many connections simultaneously without blocking the execution of other code.
+
+// In summary, the event loop in Node.js is responsible for managing asynchronous I/O operations by polling for events and invoking callbacks when those events occur. This design allows Node.js to be highly efficient and scalable for handling concurrent connections.
+
+**<u>experiment inference<u>**
+- i/o events are polled and callback functions are added to the i/o queue only after the i/o is complete
+
+**check queue**
+**<u>experiment inference<u>**
+- check queue callbacks are excuted after microtask queues callbacks, timer queue callbacks and i/o queue callbacks are executed
+
+**<u>experiment inference<u>**
+- microtask queues callbacks are executed after i/o callbacks and before check queue callbacks
+
+**<u>experiment inference<u>**
+- microtask queues callbacks are executed in between check queue callbacks
+
+**<u>experiment inference<u>**
+- when running setTimeout with delay 0ms and setImmediate method, the order of execution can never be guaranteed
