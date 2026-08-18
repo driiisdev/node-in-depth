@@ -661,3 +661,39 @@ Per iteration of the loop:
   - No matter which major queue's callback runs or in what order, its nested `nextTick`/`promise.then` pair always drains immediately afterward, before control ever moves on to the next callback - confirming that the microtask queues sit in between every single callback execution across the whole event loop, not just between phases
 
 **Experiment inference:** the `nextTick` and Promise queues are drained in between each of the six major queues, *and* in between every individual callback execution within the timer and check queues - a fresh microtask checkpoint runs after every single callback the event loop executes, not once per phase
+
+---
+
+## npm - Node Package Manager
+
+### What Is npm?
+
+1. It is the world's largest software library (registry)
+2. It is a software package manager
+
+### npm Is a Software Library
+
+- Just like a book library contains books written by various authors
+- npm is a library, or registry, which contains code packages written by various developers
+- It is a large public database of JavaScript code that developers from all over the world can use to share and borrow code
+- If you author a "code package," you can publish it to the npm registry for others to use
+- If you come across a code package authored by someone else that solves the problem you have at hand, you can borrow that code without having to reinvent the wheel
+
+### npm Is a Software Package Manager
+
+- Developers publish and consume code packages
+- How does a developer publish a package?
+- How does a developer consume a package?
+- What happens if the code package author decides to change a function name in a package?
+- How would one update an already installed package?
+- What if the package I am consuming is dependent on another package?
+- A command line interface tool that lets us manage packages in a project
+- Other package managers exist too, such as `pnpm` and `yarn`
+- `npm` is the default package manager for Node.js
+- `npm` did stand for Node Package Manager when it first started out
+- Now, it is simply the package manager for the JavaScript programming language
+
+### `package.json`
+
+- **<u>What?</u>** `package.json` is npm's configuration file - a JSON file that typically lives in the root directory of your package and holds various metadata relevant to the package
+- **<u>Why?</u>** `package.json` is the central place to configure and describe how to interact with and run your package - it is primarily used by the npm CLI

@@ -1,0 +1,12 @@
+{
+  "name": "in-depth",
+  "version": "1.0.0",
+  "description": "Personal study notes and runnable code examples from working through Node.js internals - modules, built-in APIs, and how libuv drives the event loop under the hood.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
