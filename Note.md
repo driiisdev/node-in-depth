@@ -697,3 +697,25 @@ Per iteration of the loop:
 
 - **<u>What?</u>** `package.json` is npm's configuration file - a JSON file that typically lives in the root directory of your package and holds various metadata relevant to the package
 - **<u>Why?</u>** `package.json` is the central place to configure and describe how to interact with and run your package - it is primarily used by the npm CLI
+
+### Package Versioning
+
+- Semantic Versioning (SemVer) is one of the most widely adopted versioning systems
+- A simple set of rules and requirements that dictate how version numbers are assigned and incremented
+- It is crucial to keep a semantic and historical track of changes - version numbers, and the way they change, convey meaning about the underlying code and what has been modified from one version to the next
+- A version number takes the form `MAJOR.MINOR.PATCH`, e.g. `2.0.2`
+
+![Semantic Versioning](assets/img/semantic%20versioning.png)
+
+#### Versioning Rules
+
+- **Patch** - increment when you fix a bug and the code stays backwards-compatible, e.g. `1.1.1` → `1.1.2`
+- **Minor** - increment when you add new functionality that stays backwards-compatible; reset the patch version to zero, e.g. `1.1.1` → `1.2.0`
+- **Major** - increment when you make a breaking change that is not backwards-compatible; reset the minor and patch versions to zero, e.g. `1.1.1` → `2.0.0`
+
+A few more points:
+
+- Semantic versioning typically starts at `0.1.0`
+- `0.y.z` (a major version of zero) is used for initial development
+- Once the code is production-ready, you increment to version `1.0.0`
+- Even the simplest of changes has to be accompanied by an increase in the version number

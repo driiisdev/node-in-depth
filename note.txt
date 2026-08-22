@@ -430,6 +430,27 @@ timer queue callbacks are executed in FIFO order
 - package.json is the central place to configure and describe how to interact with and run your package
 - it is primarily used by the npm cli
 
+**package versioning**
+-semantic versioning
+- semver - is one of the most widely adopted versioning systems
+- a simple set of rules and requirements that dictate how version numbers are assigned and incremented
+- it is crucial to keep a semantic and historical track of changes
+- version numbers and the way they change convey meaning about the underlying code and what has been modified from one version to the next
+
+- versioning rules
+- when you fix a bug and the code stays backwards-compatible you increment the patch version
+- for example 1.1.1 to 1.1.2
+
+- when you add new functionality but the code still stays backwards compatible, you increment the major version
+- you have to reset the minor and patch version to zero
+- for example 1.1.1 to 2.0.0
+
+-few more points
+- semantic versioning always starts with 0.1.0
+- 0.y.z (a major version of zero) is used for initial development
+- when the code is production-ready, you increment to version 1.0.0
+- even the simplest of changes has to be done with an increase in the version number
+
 
 
 
