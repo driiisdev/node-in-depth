@@ -451,6 +451,24 @@ timer queue callbacks are executed in FIFO order
 - when the code is production-ready, you increment to version 1.0.0
 - even the simplest of changes has to be done with an increase in the version number
 
+### cli tool
 
+### misc
+**cluster module**
+- node is single threaded
+- no matter how many cores you have, node only uses a single core of your cpu
+- this is fine for i/o operations but if the code has long running and cpu intensive operations, your application might struggle from a performance point of view
+-the cluster module enables the creation of child processes (also called workers) that run simultaneously
+- all created workers share the same server port
 
+**<u>NB<u>**
+- why shouldn't we simply create a large number of workers using cluster.fork()?
+- we should only create as many workers as there are cpu cores on the machine the app is running
+- if you create more workers than there are logical cores on the computer it can cause overhead as the system will have to schedule all the created workers with fewer number of cores
 
+**worker threads module**
+- the worker_threads module enables the use of threads that execute javascript in parallel
+-code executed in a worker thread runs in a seperate child process, preventing it from blocking your main application
+- the cluster module can be used to run multiple instances of node.js that can distribute workloads
+- worker_threads module allows running multiple application threads withtin a single nodejs instance
+-when process isolation is not needed, that is, no seperate instances of v8, event loop and memory are needed, you should use worker_threads

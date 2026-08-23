@@ -719,3 +719,226 @@ A few more points:
 - `0.y.z` (a major version of zero) is used for initial development
 - Once the code is production-ready, you increment to version `1.0.0`
 - Even the simplest of changes has to be accompanied by an increase in the version number
+
+---
+
+## CLI Tool
+
+- A CLI (Command Line Interface) tool is a program the user interacts with entirely through a terminal, by typing commands, instead of clicking through a graphical interface
+- Node.js is well suited for building CLI tools - it's just JavaScript running outside the browser, with full access to the file system, network, and OS-level process information
+- Well-known examples of CLI tools built with Node.js include `npm`, `create-react-app`, and the Angular/Vue CLIs
+
+### Building CLI Tools
+
+- Any regular Node.js script can be run from the command line with `node script.js`, but a few conventions turn it into something that feels like a real CLI tool:
+  - A **shebang line** (`#!/usr/bin/env node`) as the very first line of the file tells the OS which interpreter to run the file with, so it can be executed directly (`./script.js`) instead of always being invoked as `node script.js`
+  - On Unix-like systems, the file also needs execute permissions (`chmod +x script.js`) for the shebang to take effect
+  - A `"bin"` field in `package.json` maps a command name to a script file - once the package is installed (locally or globally), npm creates an executable in `node_modules/.bin` (or globally on the `PATH`) that points at that script, so the tool can be invoked by name instead of by path
+- **`process.argv`** is how a Node.js script sees whatever was typed after its name on the command line
+  - It's an array where index `0` is the path to the Node.js executable, index `1` is the path to the script being run, and index `2` onward are the actual arguments the user supplied
+  - `process.argv.slice(2)` is the common idiom for grabbing just the user-supplied arguments
+- [`concepts/cli/greet-cli.js`](concepts/cli/greet-cli.js) reads the first argument off `process.argv` and greets whoever was named, falling back to `"stranger"` if no argument was given:
+
+  ```text
+  $ node greet-cli.js Idris
+  Hello, Idris!
+  Full process.argv: [ '.../node.exe', '.../greet-cli.js', 'Idris' ]
+  ```
+
+### CLI Options
+
+- Real CLI tools rarely take just positional arguments - they also accept **options** (a.k.a. flags), usually in the form `--name value`, `--name=value`, or a short form like `-n value`
+- These could be parsed by hand by walking `process.argv` and matching strings, but that gets tedious and error-prone once a tool supports several options, short aliases, booleans, and defaults
+- **`util.parseArgs()`** is a parser built directly into Node.js (available from `node:util`, no external dependency needed) that turns raw `argv` into a structured object of `values` (the parsed options) and `positionals` (everything else)
+  - Each option is declared with a `type` (`'string'` or `'boolean'`), and can have a `short` alias and a `default` value
+- [`concepts/cli/options-demo.js`](concepts/cli/options-demo.js) declares `--name`/`-n`, `--shout`/`-s`, and `--help`/`-h` options with `util.parseArgs()`:
+
+  ```text
+  $ node options-demo.js
+  Hello, stranger!
+
+  $ node options-demo.js --name=Idris --shout extra-arg
+  HELLO, IDRIS!
+  Positional arguments: [ 'extra-arg' ]
+
+  $ node options-demo.js -n Idris -s
+  HELLO, IDRIS!
+  ```
+
+  - Short and long forms (`-n` / `--name`) both populate the same `values.name`
+  - Anything that isn't a recognized option falls through to `positionals` instead of causing an error
+  - A `--help`/`-h` flag is a common convention for printing usage instructions and exiting before running any real logic
+
+### Interactive CLI Tools
+
+- Some CLI tools don't take all their input upfront as arguments - instead, they **prompt** the user and read input line by line while the program is running, e.g. asking "What is your name?" and waiting for a response
+- The built-in **`readline`** module supports this by wrapping an input stream (`process.stdin`) and an output stream (`process.stdout`) into an interface that can prompt for and read one line of input at a time
+- `rl.question(prompt, callback)` writes `prompt` to the output stream, then waits for the user to type a line and press enter before invoking `callback` with what they typed
+  - Since `rl.question` is callback-based, it's common to wrap it in a `Promise` so a sequence of prompts can be `await`-ed one after another instead of nesting callbacks
+  - `rl.close()` should be called once no more input is needed - it releases `stdin` so the process can exit naturally
+- [`concepts/cli/interactive-cli.js`](concepts/cli/interactive-cli.js) wraps `rl.question` in a promise-returning `ask()` helper and awaits two prompts in sequence:
+
+  ```text
+  $ node interactive-cli.js
+  What is your name? Idris
+  Favorite programming language? JavaScript
+
+  Nice to meet you, Idris!
+  JavaScript is a solid choice.
+  ```
+
+  > **NB:** This only behaves this way with a real, interactive terminal typing one answer at a time. If every answer is piped in at once before the first prompt is even asked (e.g. `printf 'Idris\nJavaScript\n' | node interactive-cli.js`), the input stream can hit EOF and auto-close the `readline` interface before the second `rl.question()` call is made, leaving that prompt waiting forever on input that will never arrive.
+
+---
+
+## Misc
+
+### Sorting Out the Terms: Core, Process, Thread & Parallelism
+
+Node.js being "single-threaded" gets more confusing once cluster, worker threads, and child processes enter the picture, because several of these words get reused for different things depending on context. Before looking at any of the modules, it's worth pinning down each term on its own:
+
+- **CPU core** - a physical (or logical, with hyper-threading) processing unit on the machine. `os.cpus().length` reports how many are available. This is the actual hardware ceiling on how much can run *simultaneously* - no amount of software threading or forking creates more of it.
+- **Process** - an independent, running instance of a program, with its own memory space, its own PID, and its own OS-level resources. Two processes cannot directly read each other's variables - they can only communicate through explicit channels (IPC, pipes, files, network sockets, etc.). A running `node script.js` is one process; Node.js exposes information about it through the global `process` object (`process.pid`, `process.argv`, `process.env`, `process.exit()`, ...).
+- **Child process** - a process spawned *by* another process (the parent). The parent can send it data, listen for it exiting, and terminate it, but the two remain separate processes with separate memory. Node's built-in `child_process` module (`spawn()`, `exec()`, `fork()`) is how a Node.js program creates one.
+- **Thread** - a unit of execution *within* a process. A process can have one or many threads, and threads within the same process share that process's memory. JavaScript itself runs single-threaded - a given piece of JS runs on one thread, the **main thread**, and that thread can only run one task at a time.
+- **Thread pool** - libuv's own internal pool of OS threads (4 by default), used to run certain blocking work (file I/O, some crypto functions, DNS lookups) off the main thread. Covered in depth in [Node.js Internals → Thread Pool](#thread-pool) above. This is *not* something user JavaScript code runs on directly, and it is a different thing entirely from the `worker_threads` module below, despite both involving "threads" - one is libuv's internal implementation detail, the other is a public API for running your own JS in parallel.
+- **Multi-threading** - a single process doing work across more than one thread at once. Node's `worker_threads` module is what brings genuine, user-controlled multi-threading to a Node.js program.
+- **Parallelism vs. concurrency** - concurrency is dealing with multiple things *in progress* at once (which Node.js already does on one thread, via the event loop and non-blocking I/O); parallelism is multiple things *actually executing at the same instant*, which strictly requires more than one core doing work at the same time. Forking processes (`cluster`, `child_process`) or spinning up threads (`worker_threads`) are what make true parallelism possible for a Node.js application.
+- **Creating instances of "Node"** - `cluster.fork()` and `child_process.fork()` each start a brand new operating system process running its own complete copy of Node.js: its own V8 instance, its own event loop, its own memory, its own thread pool. `worker_threads`, by contrast, creates a new **thread** inside the *same* process and the *same* Node.js instance - lighter weight, but with the trade-offs described below.
+
+> **NB - "worker" means different things in different modules:** a `cluster` "worker" is a whole separate **process**. A `worker_threads` "Worker" is a **thread** inside the current process. They are unrelated APIs that happen to reuse the same word - which module you're reading about is the only way to know which one is meant.
+
+### Child Process
+
+- The `child_process` module is Node's lowest-level tool for running another program - which could be another Node.js script, or any other executable on the system (a shell command, a Python script, etc.) - as a separate OS process
+- Three main ways to create one:
+  - `exec()` - runs a shell command and buffers its entire output before calling back; convenient for short commands, but not suited to large output or long-running processes
+  - `spawn()` - runs a command and streams its `stdout`/`stderr` back in chunks as they arrive, without buffering everything in memory; suited to long-running processes or large output
+  - `fork()` - a specialized version of `spawn()` for launching another **Node.js** script specifically; it automatically sets up an IPC (inter-process communication) channel between parent and child, so they can exchange messages with `child.send()` / `process.send()` and `.on('message', ...)`
+- `cluster.fork()` (below) is literally built on top of `child_process.fork()` - the cluster module doesn't reinvent process creation, it wraps it with logic specific to sharing a server port across the forked processes
+- [`concepts/child-process/parent.js`](concepts/child-process/parent.js) uses `fork()` to launch [`concepts/child-process/child.js`](concepts/child-process/child.js), sends it a message, and waits for a result back over IPC:
+
+  ```text
+  $ node parent.js
+  Parent process 12092 starting a child process...
+  Child process 592 waiting for a message...
+  Parent received from child 592: counted to 1000000000
+  Child process 592 exited with code 0
+  ```
+
+  - The child runs its CPU-intensive counting loop entirely in its own process, on its own core, without ever touching the parent's event loop or memory
+  - The parent and child only ever exchange the plain values passed to `send()` - there's no shared memory here, each message is serialized across the process boundary
+
+### Cluster Module
+
+![Cluster Module](assets/img/cluster%20module.png)
+
+- Node.js is single-threaded - no matter how many CPU cores the machine has, a single Node.js process only ever uses one of them for running JavaScript
+- That's fine for I/O-bound work, but code with long-running, CPU-intensive operations can make an application struggle to stay responsive, since it's all competing for time on that one thread
+- The `cluster` module enables the creation of multiple **child processes** (called workers) that all run the same server code simultaneously, so incoming load gets spread across more than one CPU core
+- All the forked workers share the same server port - the OS (and Node's cluster master) takes care of distributing incoming connections across them
+- The master process itself doesn't handle requests - it's only in charge of forking and managing workers; each worker handles incoming requests, reads files, etc. independently, with its own event loop, its own memory, and its own V8 instance, exactly like any other separate Node.js process
+
+> **NB:** Why not just create a huge number of workers with `cluster.fork()`? You should generally only create as many workers as there are CPU cores on the machine the app runs on. Creating more workers than logical cores causes overhead, since the OS then has to time-slice all of those workers across fewer cores than there are workers competing for them - `os.cpus().length` is the number to fork.
+
+- [`concepts/cluster/no-cluster.js`](concepts/cluster/no-cluster.js) is the baseline: a single, unclustered HTTP server with a `/` route and a deliberately slow `/slow-page` route (a busy loop). Hitting `/slow-page` and then immediately hitting `/` shows the second request has to wait - both requests took roughly the same ~1 second, because the single thread was still stuck in the busy loop:
+
+  ```text
+  $ curl /slow-page &   # ~1.13s
+  $ curl /              # ~0.82s, but only resolves once /slow-page's busy loop finishes
+  ```
+
+- [`concepts/cluster/cluster.js`](concepts/cluster/cluster.js) forks one worker per CPU core (`cluster.isPrimary` handles forking and re-forking any worker that exits; each worker runs the actual HTTP server) and also re-forks a replacement worker automatically if one crashes. Repeating the same test shows `/` no longer waits on `/slow-page` - they're handled by different worker processes on different cores at the same time:
+
+  ```text
+  $ curl /slow-page &   # ~1.17s
+  $ curl /              # ~0.89s, resolves independently instead of queueing behind /slow-page
+  ```
+
+**Experiment inference:** without clustering, one CPU-bound request blocks every other request on the same process, since there's only one thread to serve all of them. With clustering, that same CPU-bound request only blocks *its own* worker - other workers, running on other cores, keep serving requests normally.
+
+### Worker Threads Module
+
+- The `worker_threads` module enables running JavaScript in parallel on separate **threads**, inside the *same* Node.js process
+- Unlike `cluster`/`child_process`, a worker thread is **not** a separate process - it shares the same process as whatever created it, just on its own thread, with its own V8 instance and own event loop, but the option to share memory directly via `SharedArrayBuffer` if needed
+- `cluster` spins up multiple full instances of Node.js (multiple processes) to distribute workloads across cores; `worker_threads` instead lets a single Node.js instance run multiple threads of its own JavaScript in parallel
+- Use `worker_threads` when process isolation isn't needed - i.e. you don't need separate V8 instances, separate event loops, or separate memory for each unit of work, just parallel execution of CPU-bound code without blocking the main thread
+- [`concepts/worker-threads/main-thread.js`](concepts/worker-threads/main-thread.js) runs an HTTP server whose `/slow-page` route offloads a CPU-heavy counting loop to [`concepts/worker-threads/worker-thread.js`](concepts/worker-threads/worker-thread.js) via `new Worker(...)`, and responds once the worker posts its result back:
+
+  ```text
+  $ curl / &            # ~0.07s - answered almost immediately
+  $ curl /slow-page     # ~1.11s - the counting loop runs on the worker thread the whole time
+  ```
+
+**Experiment inference:** the main thread stays free to handle other requests (`/` returns in ~70ms) the entire time the worker thread is busy counting to a billion - the CPU-bound work never blocks the main thread's event loop, because it's running on a different thread entirely, not a different process.
+
+### Cluster vs. Worker Threads vs. Child Process
+
+| | `child_process` | `cluster` | `worker_threads` |
+|---|---|---|---|
+| Creates | A new OS **process** | Multiple new OS **processes** (built on `child_process.fork()`) | A new **thread** in the current process |
+| Isolation | Full - separate memory, V8, event loop | Full - separate memory, V8, event loop per worker | Partial - separate V8/event loop per thread, but memory can be shared via `SharedArrayBuffer` |
+| Communication | IPC messages (`fork()`) or stdio streams (`spawn()`/`exec()`) | IPC messages (inherited from `child_process`) | `postMessage()`, or direct shared memory |
+| Typical use | Running any external command or another Node script as its own process | Scaling an HTTP server across CPU cores, sharing one port | Offloading CPU-bound JS work without leaving the process |
+| Overhead | Higher (new process) | Higher (one new process per core) | Lower (thread, not a full process) |
+
+### PM2
+
+- PM2 is a production process manager for Node.js applications - rather than writing and maintaining your own `cluster.fork()`/restart-on-crash logic by hand, PM2 provides that as a ready-made CLI tool and daemon
+- It is installed as its own package (`npm install pm2` locally, or `npm install -g pm2` globally) and is not part of Node.js itself
+- Core features:
+  - **Process management** - start, stop, restart, and delete Node.js apps as background daemons, keeping them running after the terminal that launched them is closed
+  - **Cluster mode** - `pm2 start app.js -i max` (or `-i <n>`) runs `n` instances of `app.js` load-balanced across cores, using the same underlying idea as the `cluster` module, without writing any of the forking code yourself
+  - **Auto-restart** - automatically restarts a process if it crashes, or if it exceeds a configured memory limit
+  - **Log aggregation** - `pm2 logs` merges the stdout/stderr of every managed process into one stream
+  - **Zero-downtime reloads** - `pm2 reload` restarts clustered instances one at a time instead of all at once, so the app keeps serving traffic throughout a deploy
+
+#### Common PM2 CLI Commands
+
+| Command | What it does |
+|---|---|
+| `pm2 start app.js` | Start and daemonize `app.js` |
+| `pm2 start app.js -i max` | Start it in cluster mode, one instance per CPU core |
+| `pm2 start ecosystem.config.js` | Start whatever apps are declared in a config file |
+| `pm2 list` | List all managed processes and their status |
+| `pm2 logs [name]` | Stream logs (all apps, or one by name) |
+| `pm2 restart <name>` | Restart a process |
+| `pm2 reload <name>` | Zero-downtime restart (cluster mode only) |
+| `pm2 stop <name>` | Stop a process without removing it from PM2's list |
+| `pm2 delete <name>` \| `all` | Remove a process (or all of them) from PM2's list |
+| `pm2 monit` | Live CPU/memory dashboard for managed processes |
+| `pm2 startup` | Generate/register an OS-level startup script so PM2 resurrects apps on reboot |
+| `pm2 save` | Snapshot the current process list, so `pm2 startup` + `pm2 resurrect` can restore it |
+
+- An **ecosystem file** (conventionally `ecosystem.config.js`) is how app configuration is declared once and reused, instead of retyping CLI flags every time. [`concepts/pm2/ecosystem.config.js`](concepts/pm2/ecosystem.config.js) configures [`concepts/pm2/app.js`](concepts/pm2/app.js) (a one-route HTTP server that reports back whichever process handled the request) to run in cluster mode, across every CPU core, with auto-restart and a memory cap:
+
+  ```js
+  module.exports = {
+    apps: [
+      {
+        name: 'app',
+        script: './app.js',
+        exec_mode: 'cluster',
+        instances: 'max',
+        autorestart: true,
+        watch: false,
+        max_memory_restart: '300M'
+      }
+    ]
+  };
+  ```
+
+- Running `pm2 start ecosystem.config.js` against this file launched 8 instances (one per core on this machine) in cluster mode, confirmed with `pm2 list`:
+
+  ```text
+  $ pm2 start ecosystem.config.js
+  [PM2] App [app] launched (8 instances)
+  ...
+  │ 0  │ app │ ... │ cluster │ 9288  │ ... │ online │ ...
+  │ 1  │ app │ ... │ cluster │ 24772 │ ... │ online │ ...
+  ...(8 total)
+  ```
+
+  > **NB:** Repeated requests to `/` during this test were all answered by the *same* worker PID rather than rotating evenly across all 8. Node's cluster module (which PM2's cluster mode is built on) defaults to a round-robin scheduling policy on most platforms, but defaults to leaving distribution up to the OS on Windows - so perfectly even load balancing across workers isn't something to assume on every platform without checking `cluster.schedulingPolicy`.
+
+  - Cleaning up afterward is `pm2 delete all` (stop and remove every managed process) followed by `pm2 kill` (shut down the PM2 daemon itself) - both were run here after verifying the above, so nothing from this demo is left running in the background.
